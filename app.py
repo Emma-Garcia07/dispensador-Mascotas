@@ -8,7 +8,10 @@ PetFeeder IoT v4
 - BI con cálculo de ahorro económico
 """
 import os, hashlib, hmac, time, threading, json, base64, re
-import serial as pyserial
+try:
+    import serial as pyserial
+except ImportError:
+    pyserial = None
 import pymysql
 import pymysql.cursors
 from datetime import datetime, timedelta
