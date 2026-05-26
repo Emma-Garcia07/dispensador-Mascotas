@@ -1,0 +1,1647 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>PetFeeder IoT</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#070b12;--bg2:#0d1420;--bg3:#131c2e;--bg4:#1a2540;
+  --accent:#6c63ff;--accent2:#ff6b9d;--accent3:#00d4b4;--warn:#ffb347;--danger:#ff4d6d;--success:#00e5a0;
+  --text:#eef2ff;--text2:#8899bb;--border:#1e3048;
+  --sidebar:220px;--topbar:56px;
+}
+body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar-thumb{background:var(--accent);border-radius:2px}
+
+/* ═══════════════════════════════════════════
+   AUTH
+═══════════════════════════════════════════ */
+#auth{display:flex;align-items:center;justify-content:center;min-height:100vh;
+  background:radial-gradient(ellipse at 30% 40%,rgba(108,99,255,.2) 0%,transparent 60%),
+             radial-gradient(ellipse at 70% 70%,rgba(255,107,157,.12) 0%,transparent 50%),var(--bg)}
+.auth-wrap{width:100%;max-width:380px;padding:20px}
+.auth-logo{text-align:center;margin-bottom:32px}
+.auth-logo .logo-icon{font-size:3rem;display:block;margin-bottom:10px;filter:drop-shadow(0 0 24px var(--accent))}
+.auth-logo h1{font-size:1.9rem;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.auth-logo p{color:var(--text2);font-size:.85rem;margin-top:4px}
+.auth-card{background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:28px}
+.auth-tabs{display:flex;background:var(--bg3);border-radius:12px;padding:3px;margin-bottom:24px}
+.auth-tab{flex:1;padding:9px;text-align:center;border:none;background:none;color:var(--text2);font-size:.88rem;cursor:pointer;border-radius:10px;transition:.2s;font-family:'Outfit',sans-serif;font-weight:500}
+.auth-tab.active{background:var(--accent);color:#fff}
+.fg{margin-bottom:16px}
+.fg label{display:block;font-size:.75rem;color:var(--text2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px}
+.fg input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-size:.9rem;font-family:'Outfit',sans-serif;outline:none;transition:.2s}
+.fg input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(108,99,255,.15)}
+.btn-auth{width:100%;padding:13px;background:linear-gradient(135deg,var(--accent),#8b84ff);border:none;border-radius:12px;color:#fff;font-size:.95rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;transition:.2s}
+.btn-auth:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(108,99,255,.4)}
+.auth-demo{margin-top:14px;padding:10px;background:rgba(108,99,255,.08);border:1px solid rgba(108,99,255,.15);border-radius:10px;text-align:center;font-size:.78rem;color:var(--text2)}
+.auth-demo b{color:var(--accent)}
+
+/* ═══════════════════════════════════════════
+   APP LAYOUT
+═══════════════════════════════════════════ */
+#app{display:none;min-height:100vh}
+
+/* SIDEBAR */
+.sidebar{position:fixed;top:0;left:0;width:var(--sidebar);height:100vh;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:200;transition:transform .3s}
+.sb-logo{padding:18px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.sb-logo-icon{font-size:1.4rem;filter:drop-shadow(0 0 8px var(--accent))}
+.sb-logo-text{font-weight:800;font-size:1rem;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.sb-nav{flex:1;padding:12px 8px;overflow-y:auto}
+.sb-section{font-size:.65rem;text-transform:uppercase;letter-spacing:1px;color:var(--text2);padding:10px 10px 4px;opacity:.6}
+.sb-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;cursor:pointer;color:var(--text2);font-size:.88rem;border:none;background:none;width:100%;text-align:left;font-family:'Outfit',sans-serif;transition:.15s;position:relative}
+.sb-item:hover{background:var(--bg3);color:var(--text)}
+.sb-item.active{background:rgba(108,99,255,.15);color:var(--accent);font-weight:600}
+.sb-item .si{font-size:1rem;width:18px;text-align:center;flex-shrink:0}
+.sb-badge{margin-left:auto;background:var(--danger);color:#fff;font-size:.6rem;padding:2px 5px;border-radius:10px;font-weight:700}
+.sb-user{padding:12px 8px;border-top:1px solid var(--border)}
+.sb-user-btn{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;cursor:pointer;transition:.15s;border:none;background:none;width:100%;text-align:left}
+.sb-user-btn:hover{background:var(--bg3)}
+.sb-avatar{width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.85rem;flex-shrink:0}
+.sb-uname{font-size:.82rem;font-weight:600;color:var(--text)}
+.sb-uemail{font-size:.68rem;color:var(--danger)}
+
+/* MAIN */
+.main{margin-left:var(--sidebar);min-height:100vh;display:flex;flex-direction:column}
+.topbar{height:var(--topbar);background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 20px;position:sticky;top:0;z-index:100}
+.topbar-left{display:flex;align-items:center;gap:10px}
+.hamburger{display:none;background:var(--bg3);border:1px solid var(--border);width:34px;height:34px;border-radius:9px;align-items:center;justify-content:center;cursor:pointer;font-size:1rem;color:var(--text);flex-shrink:0}
+.topbar-title{font-weight:700;font-size:1rem}
+.topbar-right{display:flex;align-items:center;gap:8px}
+.icon-btn{width:34px;height:34px;border-radius:9px;background:var(--bg3);border:1px solid var(--border);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.95rem;transition:.15s;position:relative;flex-shrink:0}
+.icon-btn:hover{background:var(--bg4);color:var(--text)}
+.notif-dot{position:absolute;top:5px;right:5px;width:6px;height:6px;background:var(--danger);border-radius:50%;border:1.5px solid var(--bg2)}
+.cloud-badge{display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:8px;font-size:.72rem;font-weight:600;border:1px solid}
+.cloud-badge.online{background:rgba(0,229,160,.08);color:var(--success);border-color:rgba(0,229,160,.2)}
+.cloud-badge.offline{background:rgba(255,77,109,.08);color:var(--danger);border-color:rgba(255,77,109,.2)}
+.cloud-dot{width:5px;height:5px;border-radius:50%;background:currentColor;animation:blink 1.5s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* PAGES */
+.content{flex:1;padding:20px;overflow-y:auto}
+.page{display:none;animation:fadeIn .25s ease}
+.page.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.page-hdr{margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:gap;gap:10px}
+.page-hdr h2{font-size:1.4rem;font-weight:800}
+.page-hdr p{color:var(--text2);font-size:.83rem;margin-top:2px}
+
+/* ═══════════════════════════════════════════
+   COMPONENTS
+═══════════════════════════════════════════ */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:18px}
+.card-title{font-size:.85rem;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:14px}
+
+/* STATS */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:16px}
+.stat{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:16px;position:relative;overflow:hidden}
+.stat::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.stat.c1::before{background:linear-gradient(90deg,var(--accent),transparent)}
+.stat.c2::before{background:linear-gradient(90deg,var(--accent2),transparent)}
+.stat.c3::before{background:linear-gradient(90deg,var(--accent3),transparent)}
+.stat.c4::before{background:linear-gradient(90deg,var(--warn),transparent)}
+.stat.c5::before{background:linear-gradient(90deg,var(--success),transparent)}
+.stat-icon{font-size:1.3rem;margin-bottom:8px}
+.stat-val{font-size:1.8rem;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+.stat-lbl{font-size:.7rem;color:var(--text2);margin-top:3px;text-transform:uppercase;letter-spacing:.4px}
+
+/* GRID */
+.g2{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+.g3{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:8px 14px;border-radius:9px;border:none;cursor:pointer;font-size:.83rem;font-weight:600;transition:.15s;font-family:'Outfit',sans-serif;white-space:nowrap}
+.btn:hover{transform:translateY(-1px)}
+.btn:active{transform:scale(.97)}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.btn-sm{padding:6px 11px;font-size:.78rem}
+.btn-accent{background:linear-gradient(135deg,var(--accent),#8b84ff);color:#fff}
+.btn-accent:hover{box-shadow:0 6px 18px rgba(108,99,255,.35)}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text2)}
+.btn-outline:hover{border-color:var(--accent);color:var(--accent)}
+.btn-danger{background:rgba(255,77,109,.12);color:var(--danger);border:1px solid rgba(255,77,109,.2)}
+.btn-success{background:rgba(0,229,160,.12);color:var(--success);border:1px solid rgba(0,229,160,.2)}
+.btn-warn{background:rgba(255,179,71,.12);color:var(--warn);border:1px solid rgba(255,179,71,.2)}
+.btn-full{width:100%;justify-content:center}
+
+/* TABLE */
+.tbl-wrap{overflow-x:auto;border-radius:12px;border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:.83rem;min-width:500px}
+thead{background:var(--bg3)}
+th{padding:10px 14px;text-align:left;font-size:.68rem;text-transform:uppercase;letter-spacing:.5px;color:var(--text2);font-weight:600;white-space:nowrap}
+td{padding:10px 14px;border-top:1px solid var(--border);vertical-align:middle}
+tr:hover td{background:rgba(255,255,255,.015)}
+
+/* PILLS */
+.pill{display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border-radius:20px;font-size:.7rem;font-weight:600}
+.pill.green{background:rgba(0,229,160,.12);color:var(--success)}
+.pill.red{background:rgba(255,77,109,.12);color:var(--danger)}
+.pill.yellow{background:rgba(255,179,71,.12);color:var(--warn)}
+.pill.purple{background:rgba(108,99,255,.12);color:var(--accent)}
+.pill.blue{background:rgba(0,212,180,.12);color:var(--accent3)}
+
+/* PROGRESS */
+.prog{height:6px;background:var(--bg3);border-radius:3px;overflow:hidden}
+.prog-fill{height:100%;border-radius:3px;transition:.5s}
+.prog-fill.ok{background:linear-gradient(90deg,var(--accent3),var(--accent))}
+.prog-fill.warn{background:linear-gradient(90deg,var(--warn),#ff8c42)}
+.prog-fill.danger{background:linear-gradient(90deg,var(--danger),#ff6b6b)}
+
+/* MODAL */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:300;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:.2s;padding:16px}
+.modal-bg.open{opacity:1;pointer-events:all}
+.modal{background:var(--bg2);border:1px solid var(--border);border-radius:18px;padding:24px;width:100%;max-width:460px;max-height:85vh;overflow-y:auto;transform:scale(.95);transition:.2s}
+.modal-bg.open .modal{transform:scale(1)}
+.modal-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.modal-hdr h3{font-size:1.05rem;font-weight:700}
+.modal-close{background:var(--bg3);border:1px solid var(--border);width:30px;height:30px;border-radius:8px;cursor:pointer;color:var(--text2);display:flex;align-items:center;justify-content:center;transition:.15s}
+.modal-close:hover{background:var(--bg4);color:var(--text)}
+.modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fgm{margin-bottom:14px}
+.fgm label{display:block;font-size:.72rem;color:var(--text2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px}
+.fgm input,.fgm select,.fgm textarea{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:9px;padding:9px 12px;color:var(--text);font-size:.88rem;font-family:'Outfit',sans-serif;outline:none;transition:.2s}
+.fgm input:focus,.fgm select:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(108,99,255,.12)}
+.fgm select option{background:var(--bg3)}
+
+/* TOGGLE */
+.toggle{position:relative;display:inline-block;width:38px;height:22px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0}
+.tslider{position:absolute;cursor:pointer;inset:0;background:var(--bg4);border-radius:22px;transition:.3s;border:1px solid var(--border)}
+.tslider:before{content:'';position:absolute;height:14px;width:14px;left:3px;bottom:3px;background:var(--text2);border-radius:50%;transition:.3s}
+input:checked+.tslider{background:rgba(0,229,160,.15);border-color:var(--success)}
+input:checked+.tslider:before{transform:translateX(16px);background:var(--success)}
+
+/* DIAS */
+.dias-wrap{display:flex;gap:5px;flex-wrap:wrap}
+.dia-btn{padding:4px 8px;border-radius:7px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-size:.72rem;cursor:pointer;transition:.15s;font-family:'Outfit',sans-serif;font-weight:500}
+.dia-btn.sel{background:rgba(108,99,255,.18);border-color:var(--accent);color:var(--accent)}
+
+/* CHART WRAPPER */
+.chart-wrap{position:relative;height:220px}
+.chart-wrap.tall{height:280px}
+
+/* NOTIF PANEL */
+.notif-panel{position:fixed;top:calc(var(--topbar) + 8px);right:16px;width:300px;background:var(--bg2);border:1px solid var(--border);border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,.4);z-index:150;transform:translateY(-8px) scale(.97);opacity:0;pointer-events:none;transition:.2s;overflow:hidden}
+.notif-panel.open{transform:translateY(0) scale(1);opacity:1;pointer-events:all}
+.notif-phdr{padding:12px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.notif-phdr h4{font-size:.85rem;font-weight:600}
+.notif-items{max-height:280px;overflow-y:auto}
+.notif-item{padding:10px 14px;border-bottom:1px solid var(--border);transition:.15s}
+.notif-item:hover{background:var(--bg3)}
+.notif-item.unread{background:rgba(108,99,255,.05)}
+.ni-title{font-size:.82rem;font-weight:500}
+.ni-msg{font-size:.72rem;color:var(--text2);margin-top:2px}
+.ni-time{font-size:.65rem;color:var(--text2);margin-top:3px;opacity:.7}
+
+/* ALERT ITEMS */
+.alert-item{display:flex;align-items:flex-start;gap:10px;padding:12px;border-radius:12px;margin-bottom:8px}
+.alert-item.warning{background:rgba(255,179,71,.08);border:1px solid rgba(255,179,71,.2)}
+.alert-item.error{background:rgba(255,77,109,.08);border:1px solid rgba(255,77,109,.2)}
+.alert-item.info{background:rgba(108,99,255,.08);border:1px solid rgba(108,99,255,.2)}
+.alert-icon{font-size:1.2rem;flex-shrink:0;margin-top:1px}
+.alert-title{font-size:.85rem;font-weight:600;margin-bottom:2px}
+.alert-msg{font-size:.75rem;color:var(--text2)}
+
+/* SERVO */
+.servo-panel{max-width:340px;margin:0 auto;text-align:center}
+.servo-dial{width:110px;height:110px;border-radius:50%;border:2px solid var(--border);background:var(--bg3);position:relative;display:flex;align-items:center;justify-content:center;margin:0 auto 10px}
+.srv-needle{width:2px;height:40px;background:linear-gradient(to bottom,var(--accent),transparent);border-radius:2px;position:absolute;bottom:50%;left:50%;transform-origin:bottom center;transform:translateX(-50%) rotate(0deg);transition:transform .3s;box-shadow:0 0 6px var(--accent)}
+.srv-center{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent);z-index:1}
+.srv-deg{font-size:1.8rem;font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums}
+.srv-btns{display:flex;gap:10px;justify-content:center;margin-top:14px;flex-wrap:wrap}
+.srv-btn{padding:11px 18px;border:none;border-radius:12px;font-size:.88rem;font-weight:700;cursor:pointer;transition:.2s;font-family:'Outfit',sans-serif}
+.srv-btn:hover{transform:translateY(-1px)}
+.srv-btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.srv-abrir{background:linear-gradient(135deg,var(--success),#00b87a);color:#0a0a0f}
+.srv-cerrar{background:linear-gradient(135deg,var(--danger),#cc3355);color:#fff}
+input[type=range]{width:100%;appearance:none;height:4px;border-radius:2px;background:linear-gradient(90deg,var(--accent) 0%,var(--accent) var(--pct,50%),var(--bg4) var(--pct,50%),var(--bg4) 100%);outline:none;cursor:pointer;margin:10px 0}
+input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent);cursor:pointer}
+
+/* MASCOTA CARDS */
+.pet-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:16px;transition:.2s;cursor:pointer}
+.pet-card:hover{border-color:rgba(108,99,255,.3);transform:translateY(-2px)}
+.pet-av{width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:1.6rem;margin-bottom:12px}
+.pet-name{font-weight:700;font-size:.98rem}
+.pet-meta{font-size:.73rem;color:var(--text2);margin-top:3px}
+.pet-stats{display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
+.ps{flex:1;text-align:center}
+.ps-val{font-weight:800;font-size:.95rem;color:var(--accent)}
+.ps-lbl{font-size:.63rem;color:var(--text2);margin-top:1px}
+.add-card{border:2px dashed var(--border);border-radius:14px;padding:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;min-height:160px;transition:.2s;color:var(--text2)}
+.add-card:hover{border-color:var(--accent);color:var(--accent);background:rgba(108,99,255,.04)}
+
+/* DISP CARDS */
+.disp-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:16px;transition:.2s}
+.disp-card:hover{border-color:rgba(108,99,255,.25)}
+
+/* BI CARDS */
+.bi-kpi{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:16px;display:flex;align-items:center;gap:14px}
+.bi-kpi-icon{font-size:2rem;flex-shrink:0}
+.bi-kpi-val{font-size:1.6rem;font-weight:800;line-height:1}
+.bi-kpi-lbl{font-size:.72rem;color:var(--text2);margin-top:3px}
+.bi-kpi-sub{font-size:.7rem;color:var(--text2);margin-top:2px;opacity:.7}
+
+/* TOAST */
+.toasts{position:fixed;bottom:20px;right:16px;z-index:999;display:flex;flex-direction:column;gap:6px;max-width:280px}
+.toast{background:var(--bg2);border:1px solid var(--border);border-radius:11px;padding:10px 14px;font-size:.8rem;display:flex;align-items:center;gap:8px;animation:tIn .25s ease;box-shadow:0 4px 16px rgba(0,0,0,.4)}
+.toast.ok{border-left:3px solid var(--success)}
+.toast.err{border-left:3px solid var(--danger)}
+.toast.info{border-left:3px solid var(--accent)}
+@keyframes tIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+
+/* EMPTY */
+.empty{text-align:center;padding:40px 16px;color:var(--text2)}
+.empty-icon{font-size:2.5rem;margin-bottom:10px;opacity:.4}
+
+/* MOBILE OVERLAY */
+.mob-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:199}
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════════ */
+@media(max-width:768px){
+  :root{--sidebar:220px}
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:translateX(0)}
+  .main{margin-left:0}
+  .hamburger{display:flex}
+  .content{padding:14px}
+  .stat-grid{grid-template-columns:1fr 1fr}
+  .g2,.g3{grid-template-columns:1fr}
+  .fr{grid-template-columns:1fr}
+  .toasts{left:16px;right:16px;max-width:none}
+  .notif-panel{right:8px;left:8px;width:auto}
+  .cloud-badge span:last-child{display:none}
+  table{min-width:400px}
+}
+@media(max-width:400px){
+  .stat-grid{grid-template-columns:1fr}
+  .auth-card{padding:20px}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ AUTH ═══════════════ -->
+<div id="auth">
+  <div class="auth-wrap">
+    <div class="auth-logo">
+      <span class="logo-icon">🐾</span>
+      <h1>PetFeeder IoT</h1>
+      <p>Sistema inteligente de alimentación</p>
+    </div>
+    <div class="auth-card">
+      <div class="auth-tabs">
+        <button class="auth-tab active" onclick="switchTab('login')">Iniciar sesión</button>
+        <button class="auth-tab" onclick="switchTab('register')">Registrarse</button>
+      </div>
+      <div id="tab-login">
+        <div class="fg"><label>Email</label><input type="email" id="l-email" placeholder="demo@petfeeder.com"></div>
+        <div class="fg"><label>Contraseña</label><input type="password" id="l-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
+        <button class="btn-auth" id="btn-login" onclick="doLogin()">Entrar →</button>
+        <div class="auth-demo">Demo: <b>demo@petfeeder.com</b> / <b>demo123</b></div>
+      </div>
+      <div id="tab-reg" style="display:none">
+        <div class="fg"><label>Nombre</label><input type="text" id="r-nombre" placeholder="Tu nombre"></div>
+        <div class="fg"><label>Email</label><input type="email" id="r-email" placeholder="tu@email.com"></div>
+        <div class="fg"><label>Contraseña</label><input type="password" id="r-pass" placeholder="Mínimo 6 caracteres"></div>
+        <button class="btn-auth" id="btn-reg" onclick="doRegister()">Crear cuenta →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ APP ═══════════════ -->
+<div id="app">
+  <div class="mob-overlay" id="mob-overlay" onclick="closeSidebar()"></div>
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sb-logo">
+      <span class="sb-logo-icon">🐾</span>
+      <span class="sb-logo-text">PetFeeder IoT</span>
+    </div>
+    <div class="sb-nav">
+      <div class="sb-section">Principal</div>
+      <button class="sb-item active" onclick="goPage('dashboard')"><span class="si">🏠</span>Dashboard</button>
+      <button class="sb-item" onclick="goPage('bi')"><span class="si">📊</span>Análisis BI</button>
+      <button class="sb-item" onclick="goPage('ahorro')"><span class="si">💰</span>ROI & Ahorro</button>
+      <button class="sb-item" onclick="goPage('graficas')"><span class="si">📈</span>Gráficas</button>
+      <button class="sb-item" onclick="goPage('sensores')"><span class="si">🌡️</span>Sensores</button>
+      <button class="sb-item" onclick="goPage('servo')"><span class="si">⚙️</span>Servo<span class="pill green" style="margin-left:auto;font-size:.58rem;padding:2px 5px">LIVE</span></button>
+      <div class="sb-section">Gestión</div>
+      <button class="sb-item" onclick="goPage('mascotas')"><span class="si">🐕</span>Mascotas</button>
+      <button class="sb-item" onclick="goPage('horarios')"><span class="si">🕐</span>Horarios</button>
+      <button class="sb-item" onclick="goPage('dispensadores')"><span class="si">📦</span>Dispensadores</button>
+      <button class="sb-item" onclick="goPage('historial')"><span class="si">📋</span>Historial</button>
+    </div>
+    <div class="sb-user">
+      <button class="sb-user-btn" onclick="doLogout()">
+        <div class="sb-avatar" id="sb-av">?</div>
+        <div><div class="sb-uname" id="sb-name">-</div><div class="sb-uemail">Cerrar sesión</div></div>
+      </button>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-left">
+        <button class="hamburger" onclick="toggleSidebar()">☰</button>
+        <div class="topbar-title" id="tb-title">Dashboard</div>
+      </div>
+      <div class="topbar-right">
+        <div class="cloud-badge offline" id="cloud-badge"><span class="cloud-dot"></span><span>Offline</span></div>
+        <button class="icon-btn" onclick="toggleNotifs()" id="notif-btn">🔔<span class="notif-dot" id="notif-dot" style="display:none"></span></button>
+        <button class="icon-btn" onclick="refreshPage()">🔄</button>
+      </div>
+    </div>
+
+    <!-- NOTIF PANEL -->
+    <div class="notif-panel" id="notif-panel">
+      <div class="notif-phdr"><h4>Notificaciones</h4><button class="btn btn-sm btn-outline" onclick="marcarLeidas()">Leer todas</button></div>
+      <div class="notif-items" id="notif-items"><div class="empty"><div class="empty-icon">🔔</div><p>Sin notificaciones</p></div></div>
+    </div>
+
+    <div class="content">
+
+      <!-- DASHBOARD -->
+      <div class="page active" id="page-dashboard">
+        <div class="page-hdr"><div><h2 id="dash-greet">Bienvenido 🌟</h2><p id="dash-date">-</p></div></div>
+        <div class="stat-grid">
+          <div class="stat c1"><div class="stat-icon">🐾</div><div class="stat-val" id="d-mascotas">-</div><div class="stat-lbl">Mascotas</div></div>
+          <div class="stat c2"><div class="stat-icon">🍽️</div><div class="stat-val" id="d-tomas">-</div><div class="stat-lbl">Tomas hoy</div></div>
+          <div class="stat c3"><div class="stat-icon">⚖️</div><div class="stat-val" id="d-gramos">-</div><div class="stat-lbl">Gramos hoy</div></div>
+          <div class="stat c4"><div class="stat-icon">⚙️</div><div class="stat-val" id="d-servo">-</div><div class="stat-lbl">Compuerta</div></div>
+        </div>
+        <div class="g2">
+          <div class="card"><div class="card-title">📦 Dispensadores</div><div id="d-disps"></div></div>
+          <div class="card"><div class="card-title">⏰ Próximas tomas</div><div id="d-proximas"></div></div>
+        </div>
+        <div style="margin-top:14px" class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+            <div class="card-title" style="margin:0">🕐 Últimas dispensaciones</div>
+            <button class="btn btn-sm btn-outline" onclick="goPage('historial')">Ver todo</button>
+          </div>
+          <div id="d-ultimas"></div>
+        </div>
+      </div>
+
+      <!-- ANÁLISIS BI -->
+      <div class="page" id="page-bi">
+        <div class="page-hdr"><div><h2>📊 Inteligencia de Negocios</h2><p>KPIs y análisis del sistema</p></div><button class="btn btn-accent" onclick="loadBI()">🔄 Actualizar</button></div>
+        <!-- KPIs -->
+        <div class="g3" id="bi-kpis" style="margin-bottom:16px"></div>
+        <!-- Alertas -->
+        <!-- Temperatura actual en BI -->
+        <div id="bi-sensores-actual" style="margin-bottom:16px"></div>
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-title">🚨 Alertas inteligentes</div>
+          <div id="bi-alertas"></div>
+        </div>
+        <!-- Tabla resumen -->
+        <div class="card">
+          <div class="card-title">📋 Resumen ejecutivo</div>
+          <div id="bi-tabla"></div>
+        </div>
+      </div>
+
+      <!-- GRÁFICAS -->
+      <div class="page" id="page-graficas">
+        <div class="page-hdr"><div><h2>📈 Gráficas</h2><p>Visualización de datos en tiempo real</p></div></div>
+        <div class="g2" style="margin-bottom:14px">
+          <div class="card">
+            <div class="card-title">Consumo diario (últimos 14 días)</div>
+            <div class="chart-wrap"><canvas id="chart-diario"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Consumo por mascota (30 días)</div>
+            <div class="chart-wrap"><canvas id="chart-mascota"></canvas></div>
+          </div>
+        </div>
+        <div class="g2">
+          <div class="card">
+            <div class="card-title">Tomas por hora del día</div>
+            <div class="chart-wrap"><canvas id="chart-hora"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Nivel actual de dispensadores</div>
+            <div class="chart-wrap"><canvas id="chart-nivel"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SERVO -->
+      <div class="page" id="page-servo">
+        <div class="page-hdr"><div><h2>⚙️ Control de Compuerta</h2><p>Servo MG995 vía PCA9685</p></div></div>
+        <div class="g2">
+          <div class="card">
+            <div class="servo-panel">
+              <div id="hw-badge" class="pill yellow" style="margin-bottom:16px;font-size:.75rem">⚡ Modo simulación</div>
+              <div class="servo-dial">
+                <div class="srv-needle" id="srv-needle"></div>
+                <div class="srv-center"></div>
+              </div>
+              <div class="srv-deg" id="srv-deg">90°</div>
+              <div style="color:var(--text2);font-size:.78rem;margin-bottom:16px" id="srv-sub">Compuerta en 90°</div>
+              <div style="padding:0 10px">
+                <div style="display:flex;justify-content:space-between;font-size:.75rem;color:var(--text2);margin-bottom:4px"><span>0°</span><span id="slider-lbl" style="color:var(--accent);font-weight:700">90°</span><span>180°</span></div>
+                <input type="range" id="srv-slider" min="0" max="180" value="90" oninput="updateSlider(this.value)" onchange="moverServo(this.value)">
+              </div>
+              <div class="srv-btns">
+                <button class="srv-btn" style="background:var(--bg3);border:1px solid var(--border);color:var(--text2)" onclick="moverServo(0)">◀ 0°</button>
+                <button class="srv-btn" style="background:var(--bg3);border:1px solid var(--border);color:var(--text2)" onclick="moverServo(90)">⬛ 90°</button>
+                <button class="srv-btn" style="background:var(--bg3);border:1px solid var(--border);color:var(--text2)" onclick="moverServo(180)">▶ 180°</button>
+              </div>
+              <button class="btn btn-outline btn-full" style="margin-top:12px" onclick="sweepServo()">🔄 Barrido completo</button>
+              <div style="display:flex;gap:8px;margin-top:10px">
+                <button class="srv-btn srv-abrir" style="flex:1" id="srv-abrir" onclick="moverCompuerta('abrir')">🔓 Abrir</button>
+                <button class="srv-btn srv-cerrar" style="flex:1" id="srv-cerrar" onclick="moverCompuerta('cerrar')" disabled>🔒 Cerrar</button>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">⚡ Dispensar manual</div>
+            <div class="fgm"><label>Mascota</label><select id="srv-mascota"></select></div>
+            <div class="fgm"><label>Dispensador</label><select id="srv-dispensador"></select></div>
+            <div class="fgm"><label>Gramos</label><input type="number" id="srv-gramos" value="100" min="10" max="500"></div>
+            <button class="btn btn-accent btn-full" onclick="dispensarManual()">⚡ Dispensar ahora</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- MASCOTAS -->
+      <div class="page" id="page-mascotas">
+        <div class="page-hdr"><div><h2>🐕 Mascotas</h2><p>Gestiona tus animales</p></div><button class="btn btn-accent" onclick="openModalMascota()">+ Nueva</button></div>
+        <div class="g3" id="mascotas-grid"></div>
+      </div>
+
+      <!-- HORARIOS -->
+      <div class="page" id="page-horarios">
+        <div class="page-hdr"><div><h2>🕐 Horarios</h2><p>Programación automática</p></div><button class="btn btn-accent" onclick="openModalHorario()">+ Nuevo</button></div>
+        <div class="tbl-wrap"><table><thead><tr><th>Nombre</th><th>Mascota</th><th>Hora</th><th>Gramos</th><th>Días</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="hor-tbody"></tbody></table></div>
+      </div>
+
+      <!-- DISPENSADORES -->
+      <div class="page" id="page-dispensadores">
+        <div class="page-hdr"><div><h2>📦 Dispensadores</h2><p>Equipos registrados</p></div><button class="btn btn-accent" onclick="openModalDisp()">+ Nuevo</button></div>
+        <div class="g2" id="disps-grid"></div>
+      </div>
+
+      <!-- HISTORIAL -->
+      <div class="page" id="page-historial">
+        <div class="page-hdr"><div><h2>📋 Historial</h2><p>Registro de dispensaciones</p></div></div>
+        <div class="card" style="margin-bottom:14px">
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+            <div class="fgm" style="margin:0;flex:1;min-width:130px"><label>Desde</label><input type="date" id="h-desde"></div>
+            <div class="fgm" style="margin:0;flex:1;min-width:130px"><label>Hasta</label><input type="date" id="h-hasta"></div>
+            <div class="fgm" style="margin:0;flex:1;min-width:130px"><label>Mascota</label><select id="h-mascota"><option value="">Todas</option></select></div>
+            <button class="btn btn-accent" onclick="loadHistorial()">Buscar</button>
+          </div>
+        </div>
+        <div class="tbl-wrap"><table><thead><tr><th>Fecha/Hora</th><th>Mascota</th><th>Dispensador</th><th>Gramos</th><th>Tipo</th><th>Estado</th></tr></thead><tbody id="hist-tbody"></tbody></table></div>
+        <div style="display:flex;gap:8px;justify-content:center;margin-top:12px;align-items:center">
+          <button class="btn btn-outline btn-sm" id="h-prev" onclick="histNav(-1)" disabled>← Anterior</button>
+          <span id="h-page" style="font-size:.8rem;color:var(--text2)">Pág. 1</span>
+          <button class="btn btn-outline btn-sm" id="h-next" onclick="histNav(1)">Siguiente →</button>
+        </div>
+      </div>
+
+
+      <!-- SENSORES -->
+      <div class="page" id="page-sensores">
+        <div class="page-hdr"><div><h2>🌡️ Sensores en Tiempo Real</h2><p>DHT11 temperatura/humedad · HX711 peso vía Arduino</p></div><button class="btn btn-accent" onclick="loadSensores()">🔄 Actualizar</button></div>
+        <div class="stat-grid" style="margin-bottom:16px">
+          <div class="stat c2"><div class="stat-icon">🌡️</div><div class="stat-val" id="s-temp">--°</div><div class="stat-lbl">Temperatura</div></div>
+          <div class="stat c1"><div class="stat-icon">💧</div><div class="stat-val" id="s-hum">--%</div><div class="stat-lbl">Humedad</div></div>
+          <div class="stat c3"><div class="stat-icon">⚖️</div><div class="stat-val" id="s-peso">--g</div><div class="stat-lbl">Peso actual</div></div>
+          <div class="stat c4"><div class="stat-icon">⚙️</div><div class="stat-val" id="s-servo">--</div><div class="stat-lbl">Compuerta</div></div>
+        </div>
+        <div class="g2" style="margin-bottom:14px">
+          <div class="card">
+            <div class="card-title">🌡️ Temperatura y Humedad (últimas lecturas)</div>
+            <div class="chart-wrap"><canvas id="chart-temp-live"></canvas></div>
+            <div style="display:flex;gap:8px;margin-top:12px">
+              <div style="flex:1;background:var(--bg3);border-radius:10px;padding:12px;text-align:center">
+                <div style="font-size:1.4rem;font-weight:800;color:var(--accent2)" id="s-temp-big">--°C</div>
+                <div style="font-size:.7rem;color:var(--text2);margin-top:2px">Temperatura actual</div>
+              </div>
+              <div style="flex:1;background:var(--bg3);border-radius:10px;padding:12px;text-align:center">
+                <div style="font-size:1.4rem;font-weight:800;color:var(--accent)" id="s-hum-big">--%</div>
+                <div style="font-size:.7rem;color:var(--text2);margin-top:2px">Humedad actual</div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">⚖️ Peso en tiempo real</div>
+            <div class="chart-wrap"><canvas id="chart-peso-live"></canvas></div>
+            <div style="margin-top:12px">
+              <div style="font-size:2rem;font-weight:800;color:var(--accent3);text-align:center;margin-bottom:10px" id="s-peso-big">0.0g</div>
+              <div style="background:var(--bg3);border-radius:6px;height:8px;overflow:hidden;margin-bottom:10px">
+                <div id="s-peso-bar" style="height:100%;border-radius:6px;background:linear-gradient(90deg,var(--accent3),var(--accent));width:0%;transition:.4s"></div>
+              </div>
+              <button class="btn btn-warn btn-full" onclick="ponerPesoEnCero()">⬛ Poner en 0</button>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">📊 Temperatura histórica (BD últimas 24h)</div>
+          <div class="chart-wrap tall"><canvas id="chart-temp-hist"></canvas></div>
+        </div>
+      </div>
+
+      <!-- ROI & AHORRO -->
+      <div class="page" id="page-ahorro">
+        <div class="page-hdr">
+          <div><h2>💰 ROI & Ahorro Económico</h2><p>Impacto real del sistema PetFeeder IoT en tu bolsillo</p></div>
+          <button class="btn btn-accent" onclick="loadAhorro()">🔄 Recalcular</button>
+        </div>
+
+        <!-- KPIs principales -->
+        <div class="stat-grid" style="margin-bottom:20px" id="ahorro-kpis"></div>
+
+        <!-- ROI Card grande -->
+        <div class="card" style="margin-bottom:16px;background:linear-gradient(135deg,rgba(108,99,255,.15),rgba(0,212,180,.1));border-color:rgba(108,99,255,.3)" id="roi-card">
+          <div style="text-align:center;padding:10px 0">
+            <div style="font-size:.8rem;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Retorno de Inversión</div>
+            <div style="font-size:3.5rem;font-weight:800;font-family:'Outfit',sans-serif" id="roi-pct-big">--%</div>
+            <div style="color:var(--text2);font-size:.85rem;margin-top:4px" id="roi-sub">Calculando...</div>
+          </div>
+        </div>
+
+        <!-- Desglose de ahorro -->
+        <div class="g2" style="margin-bottom:16px">
+          <div class="card">
+            <div class="card-title">💰 Desglose de ahorro</div>
+            <div id="ahorro-desglose"></div>
+            <div class="chart-wrap" style="margin-top:16px"><canvas id="chart-ahorro-desglose"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-title">📈 Proyección acumulada</div>
+            <div class="chart-wrap tall"><canvas id="chart-proyeccion"></canvas></div>
+          </div>
+        </div>
+
+        <!-- Métricas de uso -->
+        <div class="g2" style="margin-bottom:16px">
+          <div class="card">
+            <div class="card-title">📊 Métricas de uso real</div>
+            <div id="ahorro-metricas"></div>
+          </div>
+          <div class="card">
+            <div class="card-title">⚙️ Parámetros de cálculo</div>
+            <p style="font-size:.78rem;color:var(--text2);margin-bottom:14px">Ajusta los valores para personalizar el cálculo de ahorro.</p>
+            <div id="ahorro-config-form"></div>
+            <button class="btn btn-accent btn-full" style="margin-top:12px" onclick="guardarConfigBI()">💾 Guardar y recalcular</button>
+          </div>
+        </div>
+
+        <!-- Tabla comparativa -->
+        <div class="card">
+          <div class="card-title">📋 Sin PetFeeder vs Con PetFeeder</div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>Concepto</th><th>Sin PetFeeder</th><th>Con PetFeeder</th><th>Ahorro</th></tr></thead>
+              <tbody id="ahorro-tabla"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- MODALES -->
+<!-- Mascota -->
+<div class="modal-bg" id="modal-mascota"><div class="modal">
+  <div class="modal-hdr"><h3 id="mm-title">Nueva mascota</h3><button class="modal-close" onclick="closeModal('modal-mascota')">✕</button></div>
+  <input type="hidden" id="mm-id">
+  <div class="fr"><div class="fgm"><label>Nombre *</label><input type="text" id="mm-nombre"></div><div class="fgm"><label>Especie</label><select id="mm-especie"><option value="perro">🐕 Perro</option><option value="gato">🐱 Gato</option><option value="otro">🐾 Otro</option></select></div></div>
+  <div class="fr"><div class="fgm"><label>Raza</label><input type="text" id="mm-raza"></div><div class="fgm"><label>Peso (kg)</label><input type="number" id="mm-peso" step="0.1"></div></div>
+  <div class="fgm"><label>Fecha nacimiento</label><input type="date" id="mm-fecha"></div>
+  <div class="fr"><div class="fgm"><label>Alimento marca</label><input type="text" id="mm-ali-marca"></div><div class="fgm"><label>Alimento producto</label><input type="text" id="mm-ali-nom"></div></div>
+  <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('modal-mascota')">Cancelar</button><button class="btn btn-accent" onclick="saveMascota()">Guardar</button></div>
+</div></div>
+
+<!-- Horario -->
+<div class="modal-bg" id="modal-horario"><div class="modal">
+  <div class="modal-hdr"><h3 id="mh-title">Nuevo horario</h3><button class="modal-close" onclick="closeModal('modal-horario')">✕</button></div>
+  <input type="hidden" id="mh-id">
+  <div class="fgm"><label>Nombre</label><input type="text" id="mh-nombre" placeholder="Ej: Desayuno Max"></div>
+  <div class="fr"><div class="fgm"><label>Mascota *</label><select id="mh-mascota"></select></div><div class="fgm"><label>Dispensador *</label><select id="mh-disp"></select></div></div>
+  <div class="fr"><div class="fgm"><label>Hora *</label><input type="time" id="mh-hora"></div><div class="fgm"><label>Gramos *</label><input type="number" id="mh-gramos" min="1" max="1000"></div></div>
+  <div class="fgm"><label>Velocidad</label><select id="mh-vel"><option value="lenta">🐢 Lenta</option><option value="normal" selected>⚡ Normal</option><option value="rapida">🚀 Rápida</option></select></div>
+  <div class="fgm"><label>Días</label><div class="dias-wrap" id="dias-wrap"><button class="dia-btn sel" data-d="lunes">Lu</button><button class="dia-btn sel" data-d="martes">Ma</button><button class="dia-btn sel" data-d="miercoles">Mi</button><button class="dia-btn sel" data-d="jueves">Ju</button><button class="dia-btn sel" data-d="viernes">Vi</button><button class="dia-btn sel" data-d="sabado">Sa</button><button class="dia-btn sel" data-d="domingo">Do</button></div></div>
+  <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('modal-horario')">Cancelar</button><button class="btn btn-accent" onclick="saveHorario()">Guardar</button></div>
+</div></div>
+
+<!-- Dispensador -->
+<div class="modal-bg" id="modal-disp"><div class="modal">
+  <div class="modal-hdr"><h3 id="md-title">Nuevo dispensador</h3><button class="modal-close" onclick="closeModal('modal-disp')">✕</button></div>
+  <input type="hidden" id="md-id">
+  <div class="fgm"><label>Nombre *</label><input type="text" id="md-nombre"></div>
+  <div class="fr"><div class="fgm"><label>Modelo</label><input type="text" id="md-modelo"></div><div class="fgm"><label>Capacidad (g)</label><input type="number" id="md-cap"></div></div>
+  <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('modal-disp')">Cancelar</button><button class="btn btn-accent" onclick="saveDisp()">Guardar</button></div>
+</div></div>
+
+<!-- Nivel -->
+<div class="modal-bg" id="modal-nivel"><div class="modal" style="max-width:320px">
+  <div class="modal-hdr"><h3>Recargar dispensador</h3><button class="modal-close" onclick="closeModal('modal-nivel')">✕</button></div>
+  <input type="hidden" id="mn-id">
+  <div class="fgm"><label>Nivel actual (g)</label><input type="number" id="mn-nivel" min="0"></div>
+  <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('modal-nivel')">Cancelar</button><button class="btn btn-accent" onclick="saveNivel()">Actualizar</button></div>
+</div></div>
+
+<div class="toasts" id="toasts"></div>
+
+<script>
+// ═══════════════════════════════════════════
+// ESTADO GLOBAL
+// ═══════════════════════════════════════════
+const API = '';
+let TOKEN = localStorage.getItem('pf2_token');
+let USER  = JSON.parse(localStorage.getItem('pf2_user') || 'null');
+let notifOpen = false;
+let histOffset = 0, histLimit = 20;
+let charts = {};
+let servoEstado = 'cerrado';
+
+// ═══════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════
+function api(method, path, body) {
+  const opts = { method, headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + TOKEN } };
+  if (body) opts.body = JSON.stringify(body);
+  return fetch(API + path, opts).then(async r => {
+    const d = await r.json();
+    if (r.status === 401 && d.expired) { doLogout(); throw new Error('Sesión expirada'); }
+    if (!r.ok) throw new Error(d.message || 'Error');
+    return d;
+  });
+}
+
+function toast(msg, type = 'ok') {
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.innerHTML = `<span>${type==='ok'?'✅':type==='err'?'❌':'ℹ️'}</span><span>${msg}</span>`;
+  document.getElementById('toasts').appendChild(t);
+  setTimeout(() => t.remove(), 3200);
+}
+
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
+
+function fmt(iso) {
+  if (!iso) return '-';
+  const d = new Date(iso.replace(' ', 'T'));
+  return d.toLocaleString('es-MX', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+
+document.querySelectorAll('.modal-bg').forEach(o =>
+  o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); }));
+
+// ═══════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════
+function switchTab(t) {
+  document.querySelectorAll('.auth-tab').forEach((b,i) => b.classList.toggle('active', i===(t==='login'?0:1)));
+  document.getElementById('tab-login').style.display = t==='login'?'block':'none';
+  document.getElementById('tab-reg').style.display   = t==='register'?'block':'none';
+}
+
+async function doLogin() {
+  const email = document.getElementById('l-email').value.trim();
+  const pass  = document.getElementById('l-pass').value;
+  const btn   = document.getElementById('btn-login');
+  if (!email || !pass) { toast('Completa los campos', 'err'); return; }
+  btn.disabled = true; btn.textContent = 'Entrando...';
+  try {
+    const d = await api('POST', '/api/auth/login', { email, password: pass });
+    TOKEN = d.token; USER = d.usuario;
+    localStorage.setItem('pf2_token', TOKEN);
+    localStorage.setItem('pf2_user', JSON.stringify(USER));
+    initApp();
+  } catch(e) { toast(e.message, 'err'); }
+  finally { btn.disabled = false; btn.textContent = 'Entrar →'; }
+}
+
+async function doRegister() {
+  const nombre = document.getElementById('r-nombre').value.trim();
+  const email  = document.getElementById('r-email').value.trim();
+  const pass   = document.getElementById('r-pass').value;
+  const btn    = document.getElementById('btn-reg');
+  btn.disabled = true; btn.textContent = 'Creando...';
+  try {
+    const d = await api('POST', '/api/auth/register', { nombre, email, password: pass });
+    TOKEN = d.token; USER = d.usuario;
+    localStorage.setItem('pf2_token', TOKEN);
+    localStorage.setItem('pf2_user', JSON.stringify(USER));
+    initApp();
+  } catch(e) { toast(e.message, 'err'); }
+  finally { btn.disabled = false; btn.textContent = 'Crear cuenta →'; }
+}
+
+function doLogout() {
+  localStorage.removeItem('pf2_token'); localStorage.removeItem('pf2_user');
+  TOKEN = null; USER = null;
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('auth').style.display = 'flex';
+}
+
+// ═══════════════════════════════════════════
+// APP INIT
+// ═══════════════════════════════════════════
+function initApp() {
+  if (!TOKEN || !USER) { document.getElementById('auth').style.display = 'flex'; return; }
+  document.getElementById('auth').style.display = 'none';
+  document.getElementById('app').style.display  = 'block';
+  document.getElementById('sb-av').textContent   = USER.nombre[0].toUpperCase();
+  document.getElementById('sb-name').textContent = USER.nombre;
+  const h = new Date().getHours();
+  const g = h<12?'Buenos días':h<18?'Buenas tardes':'Buenas noches';
+  document.getElementById('dash-greet').textContent = g + ' ' + USER.nombre.split(' ')[0] + ' 🌟';
+  document.getElementById('dash-date').textContent  = new Date().toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'});
+  loadDashboard();
+  loadNotificaciones();
+  checkNgrok();
+}
+
+// ═══════════════════════════════════════════
+// NAVEGACIÓN
+// ═══════════════════════════════════════════
+const pageTitles = { dashboard:'Dashboard', sensores:'Sensores', ahorro:'ROI & Ahorro', bi:'Análisis BI', graficas:'Gráficas', servo:'Control Servo', mascotas:'Mascotas', horarios:'Horarios', dispensadores:'Dispensadores', historial:'Historial' };
+
+function goPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sb-item').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.querySelectorAll('.sb-item').forEach(b => { if (b.textContent.trim().startsWith(pageTitles[name]?.split(' ')[0]||'X')) b.classList.add('active'); });
+  document.getElementById('tb-title').textContent = pageTitles[name] || name;
+  closeSidebar();
+  if (name === 'dashboard')    loadDashboard();
+  else if (name === 'bi')      loadBI();
+  else if (name === 'graficas') loadGraficas();
+  else if (name === 'servo')   loadServo();
+  else if (name === 'sensores') loadSensores();
+  else if (name === 'ahorro')   loadAhorro();
+  else if (name === 'mascotas') loadMascotas();
+  else if (name === 'horarios') loadHorarios();
+  else if (name === 'dispensadores') loadDisps();
+  else if (name === 'historial') { histOffset=0; loadHistorial(); loadHistFiltros(); }
+}
+
+function refreshPage() {
+  const a = document.querySelector('.page.active');
+  if (a) goPage(a.id.replace('page-',''));
+}
+
+// MOBILE
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('mob-overlay').style.display = document.getElementById('sidebar').classList.contains('open') ? 'block' : 'none';
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('mob-overlay').style.display = 'none';
+}
+
+// ═══════════════════════════════════════════
+// NGROK / NUBE
+// ═══════════════════════════════════════════
+async function checkNgrok() {
+  try {
+    const r = await fetch('/api/health');
+    const d = await r.json();
+    const badge = document.getElementById('cloud-badge');
+    // Si la URL actual no es localhost, estamos en ngrok/nube
+    const isCloud = !window.location.hostname.includes('192.168') && !window.location.hostname.includes('localhost') && window.location.hostname !== '127.0.0.1';
+    if (isCloud) {
+      badge.className = 'cloud-badge online';
+      badge.innerHTML = '<span class="cloud-dot"></span><span>En la nube ☁️</span>';
+    } else {
+      badge.className = 'cloud-badge offline';
+      badge.innerHTML = '<span class="cloud-dot" style="background:var(--warn)"></span><span>Local</span>';
+    }
+  } catch(e) {}
+}
+
+// ═══════════════════════════════════════════
+// NOTIFICACIONES
+// ═══════════════════════════════════════════
+async function loadNotificaciones() {
+  try {
+    const d = await api('GET', '/api/notificaciones');
+    const items = document.getElementById('notif-items');
+    const dot   = document.getElementById('notif-dot');
+    const noLeidas = d.data.filter(n => !n.leida).length;
+    dot.style.display = noLeidas > 0 ? 'block' : 'none';
+    if (!d.data.length) { items.innerHTML = '<div class="empty"><div class="empty-icon">🔔</div><p>Sin notificaciones</p></div>'; return; }
+    items.innerHTML = d.data.map(n => `<div class="notif-item ${n.leida?'':'unread'}"><div class="ni-title">${esc(n.titulo)}</div><div class="ni-msg">${esc(n.mensaje)}</div><div class="ni-time">${fmt(n.created_at)}</div></div>`).join('');
+  } catch(e) {}
+}
+
+function toggleNotifs() {
+  notifOpen = !notifOpen;
+  document.getElementById('notif-panel').classList.toggle('open', notifOpen);
+  if (notifOpen) loadNotificaciones();
+}
+
+async function marcarLeidas() {
+  await api('POST', '/api/notificaciones/leer');
+  loadNotificaciones(); toast('Notificaciones leídas');
+}
+
+document.addEventListener('click', e => {
+  if (notifOpen && !e.target.closest('#notif-panel') && !e.target.closest('#notif-btn')) {
+    notifOpen = false; document.getElementById('notif-panel').classList.remove('open');
+  }
+});
+
+// ═══════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════
+async function loadDashboard() {
+  try {
+    const d = (await api('GET', '/api/dashboard')).data;
+    document.getElementById('d-mascotas').textContent = d.total_mascotas;
+    document.getElementById('d-tomas').textContent    = d.tomas_hoy;
+    document.getElementById('d-gramos').textContent   = (d.gramos_hoy||0) + 'g';
+    document.getElementById('d-servo').textContent    = d.servo_estado==='abierto'?'🔓 Abierto':'🔒 Cerrado';
+    // Sensores en dashboard
+    if(d.sensores?.dht?.temperatura !== null && d.sensores?.dht?.temperatura !== undefined){
+      const t = d.sensores.dht.temperatura, h = d.sensores.dht.humedad;
+    }
+    document.getElementById('notif-dot').style.display = d.notificaciones_no_leidas>0?'block':'none';
+
+    const dd = document.getElementById('d-disps');
+    if (!d.dispensadores.length) { dd.innerHTML='<p style="color:var(--text2);font-size:.83rem">Sin dispensadores</p>'; }
+    else dd.innerHTML = d.dispensadores.map(dp => {
+      const pct = dp.nivel_pct||0, cls = pct<20?'danger':pct<50?'warn':'ok';
+      return `<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:.83rem;margin-bottom:5px"><span>📦 ${esc(dp.nombre)}</span><span style="color:var(--text2)">${dp.nivel_actual_g}g</span></div><div class="prog"><div class="prog-fill ${cls}" style="width:${pct}%"></div></div><div style="font-size:.68rem;color:var(--text2);margin-top:3px">${pct}% disponible</div></div>`;
+    }).join('');
+
+    const pt = document.getElementById('d-proximas');
+    if (!d.proximas_tomas.length) { pt.innerHTML='<p style="color:var(--text2);font-size:.83rem">No hay más tomas hoy</p>'; }
+    else pt.innerHTML = d.proximas_tomas.map(t => `<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)"><span style="font-weight:800;color:var(--accent);min-width:44px;font-size:.9rem">${t.hora?.substr(0,5)}</span><div style="flex:1"><div style="font-size:.85rem;font-weight:500">${esc(t.mascota_nombre)}</div><div style="font-size:.7rem;color:var(--text2)">${esc(t.dispensador_nombre)}</div></div><span style="font-weight:800;color:var(--accent3);font-size:.88rem">${t.porcion_g}g</span></div>`).join('');
+
+    const ul = document.getElementById('d-ultimas');
+    if (!d.ultimas_dispensaciones.length) { ul.innerHTML='<p style="color:var(--text2);font-size:.83rem">Sin dispensaciones recientes</p>'; }
+    else ul.innerHTML = d.ultimas_dispensaciones.map(u => `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)"><div style="width:7px;height:7px;border-radius:50%;background:${u.exitosa?'var(--success)':'var(--danger)'};flex-shrink:0"></div><div style="flex:1"><div style="font-size:.83rem;font-weight:500">${esc(u.mascota_nombre)}</div><div style="font-size:.68rem;color:var(--text2)">${fmt(u.ejecutado_at)}</div></div><span style="font-weight:800;color:var(--accent3);font-size:.85rem">${u.gramos_real}g</span></div>`).join('');
+  } catch(e) { toast('Error dashboard', 'err'); }
+}
+
+// ═══════════════════════════════════════════
+// BI
+// ═══════════════════════════════════════════
+async function loadBI() {
+  try {
+    const [bi, alertas] = await Promise.all([api('GET','/api/bi/resumen'), api('GET','/api/bi/alertas')]);
+    // Sensor actual en BI
+    const sd = bi.data.sensor_actual;
+    document.getElementById('bi-sensores-actual').innerHTML = sd?.temperatura!=null ? `
+      <div class="g2" style="margin-bottom:0">
+        <div class="bi-kpi"><div class="bi-kpi-icon">🌡️</div><div><div class="bi-kpi-val" style="color:var(--accent2)">${sd.temperatura}°C</div><div class="bi-kpi-lbl">Temperatura ahora</div><div class="bi-kpi-sub">Ambiente del dispensador</div></div></div>
+        <div class="bi-kpi"><div class="bi-kpi-icon">💧</div><div><div class="bi-kpi-val" style="color:var(--accent)">${sd.humedad}%</div><div class="bi-kpi-lbl">Humedad ahora</div><div class="bi-kpi-sub">Promedio hoy: ${bi.data.ambiente_hoy?.humedad||0}%</div></div></div>
+      </div>` : '';
+    const d = bi.data;
+
+    // KPIs
+    document.getElementById('bi-kpis').innerHTML = `
+      <div class="bi-kpi"><div class="bi-kpi-icon">🍽️</div><div><div class="bi-kpi-val" style="color:var(--accent)">${d.hoy.gramos}g</div><div class="bi-kpi-lbl">Consumido hoy</div><div class="bi-kpi-sub">${d.hoy.tomas} tomas · ${d.hoy.fallidas} fallidas</div></div></div>
+      <div class="bi-kpi"><div class="bi-kpi-icon">📅</div><div><div class="bi-kpi-val" style="color:var(--accent2)">${d.promedio_diario_gramos}g</div><div class="bi-kpi-lbl">Promedio diario</div><div class="bi-kpi-sub">${d.promedio_diario_tomas} tomas/día</div></div></div>
+      <div class="bi-kpi"><div class="bi-kpi-icon">🏆</div><div><div class="bi-kpi-val" style="color:var(--accent3)">${d.top_mascota?.nombre||'-'}</div><div class="bi-kpi-lbl">Mascota que más come</div><div class="bi-kpi-sub">${d.top_mascota?.total||0}g en 30 días</div></div></div>
+      <div class="bi-kpi"><div class="bi-kpi-icon">⏰</div><div><div class="bi-kpi-val" style="color:var(--warn)">${d.hora_pico||'-'}</div><div class="bi-kpi-lbl">Hora pico</div><div class="bi-kpi-sub">Más activa del día</div></div></div>
+      <div class="bi-kpi"><div class="bi-kpi-icon">✅</div><div><div class="bi-kpi-val" style="color:var(--success)">${d.eficiencia_pct}%</div><div class="bi-kpi-lbl">Eficiencia</div><div class="bi-kpi-sub">Tomas exitosas</div></div></div>
+      <div class="bi-kpi"><div class="bi-kpi-icon">📦</div><div><div class="bi-kpi-val" style="color:var(--accent)">${d.proyeccion_mes_gramos}g</div><div class="bi-kpi-lbl">Proyección mensual</div><div class="bi-kpi-sub">Basado en últimos 7 días</div></div></div>
+    `;
+
+    // Alertas
+    const al = document.getElementById('bi-alertas');
+    if (!alertas.alertas.length) { al.innerHTML='<p style="color:var(--text2);font-size:.83rem">✅ Sin alertas activas</p>'; }
+    else al.innerHTML = alertas.alertas.map(a => `<div class="alert-item ${a.tipo}"><div class="alert-icon">${a.icono}</div><div><div class="alert-title">${esc(a.titulo)}</div><div class="alert-msg">${esc(a.msg)}</div></div></div>`).join('');
+
+    // Tabla resumen
+    document.getElementById('bi-tabla').innerHTML = `
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Métrica</th><th>Valor</th><th>Estado</th></tr></thead>
+        <tbody>
+          <tr><td>Consumo hoy</td><td>${d.hoy.gramos}g</td><td><span class="pill ${d.hoy.gramos>0?'green':'yellow'}">${d.hoy.gramos>0?'✅ Activo':'⚠️ Sin datos'}</span></td></tr>
+          <tr><td>Eficiencia del sistema</td><td>${d.eficiencia_pct}%</td><td><span class="pill ${d.eficiencia_pct>=90?'green':d.eficiencia_pct>=70?'yellow':'red'}">${d.eficiencia_pct>=90?'✅ Óptimo':d.eficiencia_pct>=70?'⚠️ Regular':'❌ Bajo'}</span></td></tr>
+          <tr><td>Dispensadores nivel bajo</td><td>${d.dispensadores_nivel_bajo}</td><td><span class="pill ${d.dispensadores_nivel_bajo===0?'green':'red'}">${d.dispensadores_nivel_bajo===0?'✅ OK':'❌ Atención'}</span></td></tr>
+          <tr><td>Proyección consumo mes</td><td>${d.proyeccion_mes_gramos}g</td><td><span class="pill blue">📊 Estimado</span></td></tr>
+          <tr><td>Hora de mayor actividad</td><td>${d.hora_pico||'-'}</td><td><span class="pill purple">⏰ Info</span></td></tr>
+        </tbody>
+      </table></div>`;
+  } catch(e) { toast('Error cargando BI', 'err'); }
+}
+
+// ═══════════════════════════════════════════
+// GRÁFICAS
+// ═══════════════════════════════════════════
+const chartDefaults = {
+  responsive: true, maintainAspectRatio: false,
+  plugins: { legend: { labels: { color: '#8899bb', font: { family: 'Outfit', size: 11 } } } },
+  scales: {
+    x: { ticks: { color: '#8899bb', font: { size: 10 } }, grid: { color: 'rgba(30,48,72,.5)' } },
+    y: { ticks: { color: '#8899bb', font: { size: 10 } }, grid: { color: 'rgba(30,48,72,.5)' } }
+  }
+};
+
+function destroyChart(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
+
+async function loadGraficas() {
+  try {
+    const [diario, mascota, hora, nivel] = await Promise.all([
+      api('GET','/api/graficas/consumo_diario'),
+      api('GET','/api/graficas/consumo_por_mascota'),
+      api('GET','/api/graficas/tomas_por_hora'),
+      api('GET','/api/graficas/nivel_dispensadores'),
+    ]);
+
+    // Consumo diario
+    destroyChart('diario');
+    charts['diario'] = new Chart(document.getElementById('chart-diario'), {
+      type: 'bar',
+      data: {
+        labels: diario.data.map(r => r.fecha?.substr(5)),
+        datasets: [{
+          label: 'Gramos',
+          data: diario.data.map(r => r.total_gramos),
+          backgroundColor: 'rgba(108,99,255,.6)',
+          borderColor: '#6c63ff', borderWidth: 1, borderRadius: 6,
+        }]
+      },
+      options: { ...chartDefaults }
+    });
+
+    // Por mascota - doughnut
+    destroyChart('mascota');
+    const colors = ['#6c63ff','#ff6b9d','#00d4b4','#ffb347','#00e5a0','#b06cff'];
+    charts['mascota'] = new Chart(document.getElementById('chart-mascota'), {
+      type: 'doughnut',
+      data: {
+        labels: mascota.data.map(r => r.nombre),
+        datasets: [{ data: mascota.data.map(r => r.total_gramos), backgroundColor: colors, borderWidth: 0 }]
+      },
+      options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom', labels:{ color:'#8899bb', font:{family:'Outfit',size:11}, padding:12 } } } }
+    });
+
+    // Por hora
+    destroyChart('hora');
+    const horas = Array.from({length:24}, (_,i) => String(i).padStart(2,'0')+':00');
+    const tomasMap = {};
+    hora.data.forEach(r => { tomasMap[r.hora+':00'] = r.tomas; });
+    charts['hora'] = new Chart(document.getElementById('chart-hora'), {
+      type: 'bar',
+      data: {
+        labels: horas,
+        datasets: [{ label: 'Tomas', data: horas.map(h => tomasMap[h]||0), backgroundColor: 'rgba(0,212,180,.5)', borderColor: '#00d4b4', borderWidth: 1, borderRadius: 4 }]
+      },
+      options: { ...chartDefaults }
+    });
+
+    // Nivel dispensadores
+    destroyChart('nivel');
+    charts['nivel'] = new Chart(document.getElementById('chart-nivel'), {
+      type: 'bar',
+      data: {
+        labels: nivel.data.map(r => r.nombre),
+        datasets: [
+          { label: 'Nivel actual (g)', data: nivel.data.map(r => r.nivel_actual_g), backgroundColor: 'rgba(0,229,160,.5)', borderColor: '#00e5a0', borderWidth: 1, borderRadius: 6 },
+          { label: 'Capacidad (g)',    data: nivel.data.map(r => r.capacidad_g),    backgroundColor: 'rgba(108,99,255,.2)', borderColor: '#6c63ff', borderWidth: 1, borderRadius: 6 }
+        ]
+      },
+      options: { ...chartDefaults, indexAxis: 'y' }
+    });
+
+  } catch(e) { toast('Error cargando gráficas', 'err'); }
+}
+
+// ═══════════════════════════════════════════
+// SERVO
+// ═══════════════════════════════════════════
+async function loadServo() {
+  try {
+    const d = await api('GET', '/api/compuerta/estado');
+    updateServoUI(d.estado, d.angulo);
+    const badge = document.getElementById('hw-badge');
+    badge.className = d.hardware ? 'pill green' : 'pill yellow';
+    badge.textContent = d.hardware ? '✅ Hardware conectado' : '⚡ Modo simulación';
+  } catch(e) {}
+  try {
+    const [ms, ds] = await Promise.all([api('GET','/api/mascotas'), api('GET','/api/dispensadores')]);
+    document.getElementById('srv-mascota').innerHTML    = ms.data.map(m=>`<option value="${m.id}">${esc(m.nombre)}</option>`).join('');
+    document.getElementById('srv-dispensador').innerHTML= ds.data.map(d=>`<option value="${d.id}">${esc(d.nombre)}</option>`).join('');
+  } catch(e) {}
+}
+
+function updateServoUI(estado, angulo) {
+  document.getElementById('srv-deg').textContent  = angulo + '°';
+  document.getElementById('srv-sub').textContent  = `Compuerta en ${angulo}°`;
+  document.getElementById('srv-slider').value     = angulo;
+  document.getElementById('slider-lbl').textContent = angulo + '°';
+  document.getElementById('srv-needle').style.transform = `translateX(-50%) rotate(${angulo-90}deg)`;
+  const ab = estado === 'abierto';
+  document.getElementById('srv-abrir').disabled  = ab;
+  document.getElementById('srv-cerrar').disabled = !ab;
+  servoEstado = estado;
+}
+
+function updateSlider(val) {
+  document.getElementById('slider-lbl').textContent = val + '°';
+  document.getElementById('srv-needle').style.transform = `translateX(-50%) rotate(${val-90}deg)`;
+  document.getElementById('srv-deg').textContent = val + '°';
+  const pct = (val/180)*100;
+  document.getElementById('srv-slider').style.setProperty('--pct', pct+'%');
+}
+
+async function moverServo(angulo) {
+  angulo = parseInt(angulo);
+  updateSlider(angulo);
+  try {
+    const d = await api('POST', `/api/servo/${angulo}`);
+    if (d.ok) toast(`Servo → ${angulo}°`);
+    else toast(d.message, 'err');
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+async function sweepServo() {
+  toast('Barrido iniciado ↗', 'info');
+  try { await api('POST', '/api/servo/sweep'); } catch(e) {}
+  let a = 0, dir = 1;
+  const iv = setInterval(() => {
+    a += dir * 6;
+    if (a >= 180) dir = -1;
+    if (a <= 0) { clearInterval(iv); updateSlider(90); return; }
+    updateSlider(a);
+  }, 50);
+}
+
+async function moverCompuerta(accion) {
+  try {
+    const d = await api('POST', '/api/compuerta', { accion });
+    updateServoUI(d.estado, d.angulo);
+    toast(`Compuerta ${d.estado}`);
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+async function dispensarManual() {
+  const mascota_id    = document.getElementById('srv-mascota').value;
+  const dispensador_id= document.getElementById('srv-dispensador').value;
+  const gramos        = parseFloat(document.getElementById('srv-gramos').value);
+  if (!mascota_id || !dispensador_id || !gramos) { toast('Completa todos los campos','err'); return; }
+  try {
+    await api('POST', '/api/dispensaciones/manual', { mascota_id, dispensador_id, gramos });
+    toast('✅ Dispensado correctamente');
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+// ═══════════════════════════════════════════
+// MASCOTAS
+// ═══════════════════════════════════════════
+async function loadMascotas() {
+  try {
+    const d = await api('GET', '/api/mascotas');
+    const g = document.getElementById('mascotas-grid');
+    let html = '';
+    d.data.forEach(m => {
+      const icon = m.especie==='gato'?'🐱':m.especie==='otro'?'🐾':'🐕';
+      const edad = m.fecha_nac ? Math.floor((Date.now()-new Date(m.fecha_nac))/(365.25*24*3600*1000))+'a' : '';
+      html += `<div class="pet-card">
+        <div class="pet-av">${icon}</div>
+        <div class="pet-name">${esc(m.nombre)}</div>
+        <div class="pet-meta">${esc(m.raza||'Sin raza')} ${edad?'· '+edad:''}</div>
+        ${m.nombre_producto?`<div style="margin-top:6px"><span class="pill purple">🍖 ${esc(m.nombre_producto)}</span></div>`:''}
+        <div class="pet-stats">
+          <div class="ps"><div class="ps-val">${m.tomas_hoy||0}</div><div class="ps-lbl">Tomas</div></div>
+          <div class="ps"><div class="ps-val">${m.gramos_hoy||0}g</div><div class="ps-lbl">Hoy</div></div>
+          <div class="ps"><div class="ps-val">${m.peso_kg||'-'}kg</div><div class="ps-lbl">Peso</div></div>
+        </div>
+        <div style="display:flex;gap:6px;margin-top:12px">
+          <button class="btn btn-sm btn-outline" onclick="editMascota(${m.id})">✏️ Editar</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteMascota(${m.id})">🗑️</button>
+        </div>
+      </div>`;
+    });
+    html += `<div class="add-card" onclick="openModalMascota()"><div style="font-size:2rem;margin-bottom:6px">+</div><span style="font-size:.85rem;font-weight:500">Nueva mascota</span></div>`;
+    g.innerHTML = html;
+  } catch(e) { toast('Error mascotas','err'); }
+}
+
+function openModalMascota(data=null) {
+  document.getElementById('mm-title').textContent = data ? 'Editar mascota' : 'Nueva mascota';
+  document.getElementById('mm-id').value     = data?.id||'';
+  document.getElementById('mm-nombre').value = data?.nombre||'';
+  document.getElementById('mm-especie').value= data?.especie||'perro';
+  document.getElementById('mm-raza').value   = data?.raza||'';
+  document.getElementById('mm-peso').value   = data?.peso_kg||'';
+  document.getElementById('mm-fecha').value  = data?.fecha_nac||'';
+  document.getElementById('mm-ali-marca').value = data?.marca||'';
+  document.getElementById('mm-ali-nom').value   = data?.nombre_producto||'';
+  openModal('modal-mascota');
+}
+
+async function editMascota(id) {
+  try { const d = await api('GET',`/api/mascotas/${id}`); openModalMascota(d.data); }
+  catch(e) { toast(e.message,'err'); }
+}
+
+async function saveMascota() {
+  const id = document.getElementById('mm-id').value;
+  const body = { nombre:document.getElementById('mm-nombre').value.trim(), especie:document.getElementById('mm-especie').value, raza:document.getElementById('mm-raza').value||null, peso_kg:parseFloat(document.getElementById('mm-peso').value)||null, fecha_nac:document.getElementById('mm-fecha').value||null, alimento_marca:document.getElementById('mm-ali-marca').value||null, alimento_nombre:document.getElementById('mm-ali-nom').value||null };
+  if (!body.nombre) { toast('Nombre requerido','err'); return; }
+  try {
+    if (id) await api('PUT',`/api/mascotas/${id}`,body);
+    else    await api('POST','/api/mascotas',body);
+    closeModal('modal-mascota'); loadMascotas(); toast('Mascota guardada');
+  } catch(e) { toast(e.message,'err'); }
+}
+
+async function deleteMascota(id) {
+  if (!confirm('¿Eliminar esta mascota?')) return;
+  try { await api('DELETE',`/api/mascotas/${id}`); loadMascotas(); toast('Eliminada'); }
+  catch(e) { toast(e.message,'err'); }
+}
+
+// ═══════════════════════════════════════════
+// HORARIOS
+// ═══════════════════════════════════════════
+async function loadHorarios() {
+  try {
+    const [hd,ms,ds] = await Promise.all([api('GET','/api/horarios'),api('GET','/api/mascotas'),api('GET','/api/dispensadores')]);
+    const da = {lunes:'Lu',martes:'Ma',miercoles:'Mi',jueves:'Ju',viernes:'Vi',sabado:'Sa',domingo:'Do'};
+    document.getElementById('hor-tbody').innerHTML = hd.data.length ? hd.data.map(h=>`<tr>
+      <td>${esc(h.nombre||'-')}</td>
+      <td>${h.especie==='gato'?'🐱':'🐕'} ${esc(h.mascota_nombre)}</td>
+      <td style="color:var(--accent);font-weight:700">${h.hora?.substr(0,5)}</td>
+      <td style="color:var(--accent3);font-weight:700">${h.porcion_g}g</td>
+      <td style="font-size:.72rem;color:var(--text2)">${h.dias_semana.split(',').map(d=>da[d]||d).join(' ')}</td>
+      <td><label class="toggle"><input type="checkbox" ${h.activo?'checked':''} onchange="toggleHor(${h.id},this)"><span class="tslider"></span></label></td>
+      <td><div style="display:flex;gap:5px"><button class="btn btn-sm btn-outline" onclick="editHorario(${h.id})">✏️</button><button class="btn btn-sm btn-danger" onclick="deleteHorario(${h.id})">🗑️</button></div></td>
+    </tr>`).join('') : `<tr><td colspan="7"><div class="empty"><div class="empty-icon">🕐</div><p>Sin horarios</p></div></td></tr>`;
+    document.getElementById('mh-mascota').innerHTML = ms.data.map(m=>`<option value="${m.id}">${esc(m.nombre)}</option>`).join('');
+    document.getElementById('mh-disp').innerHTML    = ds.data.map(d=>`<option value="${d.id}">${esc(d.nombre)}</option>`).join('');
+  } catch(e) { toast('Error horarios','err'); }
+}
+
+function openModalHorario(data=null) {
+  document.getElementById('mh-title').textContent = data?'Editar horario':'Nuevo horario';
+  document.getElementById('mh-id').value     = data?.id||'';
+  document.getElementById('mh-nombre').value = data?.nombre||'';
+  document.getElementById('mh-hora').value   = data?.hora?.substr(0,5)||'';
+  document.getElementById('mh-gramos').value = data?.porcion_g||'';
+  document.getElementById('mh-vel').value    = data?.velocidad||'normal';
+  if (data?.mascota_id)   document.getElementById('mh-mascota').value = data.mascota_id;
+  if (data?.dispensador_id) document.getElementById('mh-disp').value  = data.dispensador_id;
+  const dias = (data?.dias_semana||'lunes,martes,miercoles,jueves,viernes,sabado,domingo').split(',');
+  document.querySelectorAll('.dia-btn').forEach(b => { b.classList.toggle('sel', dias.includes(b.dataset.d)); b.onclick = () => b.classList.toggle('sel'); });
+  openModal('modal-horario');
+}
+
+async function editHorario(id) {
+  try { const d = await api('GET',`/api/horarios/${id}`); openModalHorario(d.data); }
+  catch(e) { toast(e.message,'err'); }
+}
+
+async function saveHorario() {
+  const id   = document.getElementById('mh-id').value;
+  const dias = [...document.querySelectorAll('.dia-btn.sel')].map(b=>b.dataset.d).join(',');
+  const body = { nombre:document.getElementById('mh-nombre').value||null, mascota_id:parseInt(document.getElementById('mh-mascota').value), dispensador_id:parseInt(document.getElementById('mh-disp').value), hora:document.getElementById('mh-hora').value, porcion_g:parseFloat(document.getElementById('mh-gramos').value), velocidad:document.getElementById('mh-vel').value, dias_semana:dias||'lunes,martes,miercoles,jueves,viernes,sabado,domingo' };
+  if (!body.hora||!body.porcion_g) { toast('Hora y gramos requeridos','err'); return; }
+  try {
+    if (id) await api('PUT',`/api/horarios/${id}`,body);
+    else    await api('POST','/api/horarios',body);
+    closeModal('modal-horario'); loadHorarios(); toast('Horario guardado');
+  } catch(e) { toast(e.message,'err'); }
+}
+
+async function toggleHor(id, cb) {
+  try { await api('PATCH',`/api/horarios/${id}/toggle`); }
+  catch(e) { cb.checked=!cb.checked; toast(e.message,'err'); }
+}
+
+async function deleteHorario(id) {
+  if (!confirm('¿Eliminar?')) return;
+  try { await api('DELETE',`/api/horarios/${id}`); loadHorarios(); toast('Eliminado'); }
+  catch(e) { toast(e.message,'err'); }
+}
+
+// ═══════════════════════════════════════════
+// DISPENSADORES
+// ═══════════════════════════════════════════
+async function loadDisps() {
+  try {
+    const d = await api('GET','/api/dispensadores');
+    const g = document.getElementById('disps-grid');
+    let html = '';
+    d.data.forEach(dp => {
+      const pct = dp.nivel_pct||0, cls = pct<20?'danger':pct<50?'warn':'ok';
+      html += `<div class="disp-card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+          <div><div style="font-size:1.6rem;margin-bottom:4px">📦</div><div style="font-weight:700">${esc(dp.nombre)}</div><div style="font-size:.72rem;color:var(--text2)">${esc(dp.modelo||'PetFeeder')}</div></div>
+          <span class="pill ${pct<20?'red':pct<50?'yellow':'green'}">${pct<20?'⚠️ Bajo':pct<50?'🔶 Medio':'✅ OK'}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:.78rem;margin-bottom:5px"><span style="color:var(--text2)">Nivel</span><span style="font-weight:600">${dp.nivel_actual_g}g / ${dp.capacidad_g||'?'}g</span></div>
+        <div class="prog" style="margin-bottom:10px"><div class="prog-fill ${cls}" style="width:${pct}%"></div></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:12px;text-align:center">
+          <div><div style="font-weight:800;font-size:.9rem">${dp.horarios_activos||0}</div><div style="font-size:.62rem;color:var(--text2)">Horarios</div></div>
+          <div><div style="font-weight:800;font-size:.9rem">${dp.capacidad_g||'-'}g</div><div style="font-size:.62rem;color:var(--text2)">Capacidad</div></div>
+          <div><div style="font-weight:800;font-size:.9rem;color:${pct<20?'var(--danger)':pct<50?'var(--warn)':'var(--success)'}">${pct}%</div><div style="font-size:.62rem;color:var(--text2)">Disponible</div></div>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn btn-sm btn-success" onclick="openModalNivel(${dp.id},${dp.nivel_actual_g})">🔋 Recargar</button>
+          <button class="btn btn-sm btn-outline" onclick="editDisp(${dp.id})">✏️</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteDisp(${dp.id})">🗑️</button>
+        </div>
+      </div>`;
+    });
+    html += `<div class="add-card" onclick="openModalDisp()"><div style="font-size:2rem;margin-bottom:6px">+</div><span style="font-size:.85rem;font-weight:500">Nuevo dispensador</span></div>`;
+    g.innerHTML = html;
+  } catch(e) { toast('Error dispensadores','err'); }
+}
+
+function openModalDisp(data=null) {
+  document.getElementById('md-title').textContent = data?'Editar':'Nuevo dispensador';
+  document.getElementById('md-id').value     = data?.id||'';
+  document.getElementById('md-nombre').value = data?.nombre||'';
+  document.getElementById('md-modelo').value = data?.modelo||'';
+  document.getElementById('md-cap').value    = data?.capacidad_g||'';
+  openModal('modal-disp');
+}
+
+async function editDisp(id) {
+  try { const d = await api('GET',`/api/dispensadores/${id}`); openModalDisp(d.data); }
+  catch(e) { toast(e.message,'err'); }
+}
+
+async function saveDisp() {
+  const id   = document.getElementById('md-id').value;
+  const body = { nombre:document.getElementById('md-nombre').value.trim(), modelo:document.getElementById('md-modelo').value||null, capacidad_g:parseFloat(document.getElementById('md-cap').value)||null };
+  if (!body.nombre) { toast('Nombre requerido','err'); return; }
+  try {
+    if (id) await api('PUT',`/api/dispensadores/${id}`,body);
+    else    await api('POST','/api/dispensadores',body);
+    closeModal('modal-disp'); loadDisps(); toast('Guardado');
+  } catch(e) { toast(e.message,'err'); }
+}
+
+function openModalNivel(id, actual) {
+  document.getElementById('mn-id').value    = id;
+  document.getElementById('mn-nivel').value = actual;
+  openModal('modal-nivel');
+}
+
+async function saveNivel() {
+  const id    = document.getElementById('mn-id').value;
+  const nivel = parseFloat(document.getElementById('mn-nivel').value);
+  try { await api('PATCH',`/api/dispensadores/${id}/nivel`,{nivel_actual_g:nivel}); closeModal('modal-nivel'); loadDisps(); toast('Nivel actualizado'); }
+  catch(e) { toast(e.message,'err'); }
+}
+
+async function deleteDisp(id) {
+  if (!confirm('¿Eliminar dispensador?')) return;
+  try { await api('DELETE',`/api/dispensadores/${id}`); loadDisps(); toast('Eliminado'); }
+  catch(e) { toast(e.message,'err'); }
+}
+
+// ═══════════════════════════════════════════
+// HISTORIAL
+// ═══════════════════════════════════════════
+async function loadHistFiltros() {
+  try {
+    const ms = await api('GET','/api/mascotas');
+    const sel = document.getElementById('h-mascota');
+    sel.innerHTML = '<option value="">Todas</option>' + ms.data.map(m=>`<option value="${m.id}">${esc(m.nombre)}</option>`).join('');
+  } catch(e) {}
+  const hoy  = new Date().toISOString().split('T')[0];
+  const hace7= new Date(Date.now()-7*86400000).toISOString().split('T')[0];
+  document.getElementById('h-desde').value = hace7;
+  document.getElementById('h-hasta').value = hoy;
+}
+
+async function loadHistorial() {
+  try {
+    const desde = document.getElementById('h-desde').value;
+    const hasta = document.getElementById('h-hasta').value;
+    const mid   = document.getElementById('h-mascota').value;
+    let url = `/api/dispensaciones?limit=${histLimit}&offset=${histOffset}`;
+    if (desde) url+=`&fecha_desde=${desde}`;
+    if (hasta) url+=`&fecha_hasta=${hasta}`;
+    if (mid)   url+=`&mascota_id=${mid}`;
+    const d = await api('GET', url);
+    document.getElementById('hist-tbody').innerHTML = d.data.length ? d.data.map(r=>`<tr>
+      <td>${fmt(r.ejecutado_at)}</td>
+      <td>${esc(r.mascota_nombre)}</td>
+      <td>${esc(r.dispensador_nombre)}</td>
+      <td style="color:var(--accent3);font-weight:700">${r.gramos_real}g</td>
+      <td><span class="pill ${r.tipo==='manual'?'purple':'blue'}">${r.tipo}</span></td>
+      <td><span class="pill ${r.exitosa?'green':'red'}">${r.exitosa?'✅':'❌'}</span></td>
+    </tr>`).join('') : `<tr><td colspan="6"><div class="empty"><div class="empty-icon">📋</div><p>Sin registros</p></div></td></tr>`;
+    document.getElementById('h-prev').disabled = histOffset===0;
+    document.getElementById('h-next').disabled = d.data.length<histLimit;
+    document.getElementById('h-page').textContent = `Pág. ${Math.floor(histOffset/histLimit)+1}`;
+  } catch(e) { toast('Error historial','err'); }
+}
+
+function histNav(dir) { histOffset = Math.max(0, histOffset + dir*histLimit); loadHistorial(); }
+
+
+// ═══════════════════════════════════════════
+// SENSORES
+// ═══════════════════════════════════════════
+let chartTempLive=null, chartPesoLive=null, chartTempHist=null;
+let sensorInterval = null;
+
+async function loadSensores(){
+  try{
+    const d = (await api('GET','/api/sensores/estado')).data;
+    updateSensorUI(d);
+  }catch(e){ toast('Error sensores','err'); }
+  loadGraficaTemp();
+  if(sensorInterval) clearInterval(sensorInterval);
+  sensorInterval = setInterval(async()=>{
+    try{
+      const d = (await api('GET','/api/sensores/estado')).data;
+      updateSensorUI(d);
+      updateChartLive(d);
+    }catch(e){}
+  }, 3000);
+}
+
+function updateSensorUI(d){
+  const t = d.dht?.temperatura, h = d.dht?.humedad, p = d.peso?.gramos;
+  document.getElementById('s-temp').textContent     = t!=null ? t+'°' : '--°';
+  document.getElementById('s-hum').textContent      = h!=null ? h+'%' : '--%';
+  document.getElementById('s-peso').textContent     = p!=null ? p+'g' : '--g';
+  document.getElementById('s-servo').textContent    = d.servo?.estado==='abierto'?'🔓':'🔒';
+  document.getElementById('s-temp-big').textContent = t!=null ? t+'°C' : '--°C';
+  document.getElementById('s-hum-big').textContent  = h!=null ? h+'%' : '--%';
+  document.getElementById('s-peso-big').textContent = p!=null ? p.toFixed(1)+'g' : '0.0g';
+  const pct = p!=null ? Math.min(100,(p/5000)*100) : 0;
+  document.getElementById('s-peso-bar').style.width = pct+'%';
+}
+
+const tempData=[],humData=[],pesoData=[],timeLabels=[];
+
+function updateChartLive(d){
+  const now = new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  if(d.dht?.temperatura!=null){
+    tempData.push(d.dht.temperatura); humData.push(d.dht.humedad);
+    timeLabels.push(now);
+    if(tempData.length>20){ tempData.shift(); humData.shift(); timeLabels.shift(); }
+    if(chartTempLive){
+      chartTempLive.data.labels = timeLabels;
+      chartTempLive.data.datasets[0].data = [...tempData];
+      chartTempLive.data.datasets[1].data = [...humData];
+      chartTempLive.update('none');
+    }
+  }
+  if(d.peso?.gramos!=null){
+    pesoData.push(d.peso.gramos);
+    if(pesoData.length>20) pesoData.shift();
+    if(chartPesoLive){
+      chartPesoLive.data.labels = pesoData.map((_,i)=>i+1);
+      chartPesoLive.data.datasets[0].data=[...pesoData];
+      chartPesoLive.update('none');
+    }
+  }
+}
+
+async function loadGraficaTemp(){
+  try{
+    const d = await api('GET','/api/graficas/temperatura');
+    // Gráfica histórica
+    if(chartTempHist){ chartTempHist.destroy(); }
+    chartTempHist = new Chart(document.getElementById('chart-temp-hist'),{
+      type:'line',
+      data:{
+        labels: d.data.map(r=>r.hora),
+        datasets:[
+          {label:'Temperatura °C',data:d.data.map(r=>r.temperatura),borderColor:'#ff6b9d',backgroundColor:'rgba(255,107,157,.1)',tension:.3,pointRadius:2,fill:true},
+          {label:'Humedad %',data:d.data.map(r=>r.humedad),borderColor:'#6c63ff',backgroundColor:'rgba(108,99,255,.1)',tension:.3,pointRadius:2,fill:true}
+        ]
+      },
+      options:{...chartDefaults}
+    });
+    // Inicializar gráficas live
+    if(chartTempLive){ chartTempLive.destroy(); }
+    chartTempLive = new Chart(document.getElementById('chart-temp-live'),{
+      type:'line',
+      data:{labels:[],datasets:[
+        {label:'Temp °C',data:[],borderColor:'#ff6b9d',backgroundColor:'rgba(255,107,157,.15)',tension:.4,pointRadius:2,fill:true},
+        {label:'Hum %',data:[],borderColor:'#6c63ff',backgroundColor:'rgba(108,99,255,.15)',tension:.4,pointRadius:2,fill:true}
+      ]},
+      options:{...chartDefaults,animation:false}
+    });
+    if(chartPesoLive){ chartPesoLive.destroy(); }
+    chartPesoLive = new Chart(document.getElementById('chart-peso-live'),{
+      type:'line',
+      data:{labels:[],datasets:[
+        {label:'Peso g',data:[],borderColor:'#00d4b4',backgroundColor:'rgba(0,212,180,.15)',tension:.4,pointRadius:2,fill:true}
+      ]},
+      options:{...chartDefaults,animation:false}
+    });
+    // Cargar historial live
+    if(d.historial_live?.length){
+      d.historial_live.forEach(r=>{ tempData.push(r.v); timeLabels.push(r.t); });
+      chartTempLive.data.labels=[...timeLabels];
+      chartTempLive.data.datasets[0].data=[...tempData];
+      chartTempLive.update();
+    }
+  }catch(e){ console.error(e); }
+}
+
+async function ponerPesoEnCero(){
+  try{
+    await api('POST','/api/sensores/peso/zero');
+    toast('Peso en 0 ✅');
+  }catch(e){ toast(e.message,'err'); }
+}
+
+// Detener polling de sensores al salir de la página
+const origGoPage = goPage;
+
+
+// ═══════════════════════════════════════════
+// ROI & AHORRO
+// ═══════════════════════════════════════════
+let chartAhorroDesglose=null, chartProyeccion=null;
+let biConfigData = {};
+
+async function loadAhorro(){
+  try{
+    const [ahorro, cfg] = await Promise.all([
+      api('GET','/api/bi/ahorro'),
+      api('GET','/api/bi/config')
+    ]);
+    biConfigData = cfg.data;
+    renderAhorro(ahorro.data);
+  }catch(e){ toast('Error cargando datos de ahorro','err'); }
+}
+
+function renderAhorro(d){
+  const a = d.ahorro, roi = d.roi, py = d.proyecciones;
+  const verde = 'var(--success)', amarillo = 'var(--warn)', rojo = 'var(--danger)';
+
+  // KPIs
+  document.getElementById('ahorro-kpis').innerHTML = `
+    <div class="stat c1"><div class="stat-icon">📅</div><div class="stat-val">${d.dias_uso}</div><div class="stat-lbl">Días de uso</div></div>
+    <div class="stat c3"><div class="stat-icon">💰</div><div class="stat-val">$${a.total_pesos.toFixed(0)}</div><div class="stat-lbl">Total ahorrado</div></div>
+    <div class="stat c2"><div class="stat-icon">📅</div><div class="stat-val">$${py.ahorro_mensual.toFixed(0)}</div><div class="stat-lbl">Ahorro/mes</div></div>
+    <div class="stat c5"><div class="stat-icon">🎯</div><div class="stat-val">${d.precision_pct}%</div><div class="stat-lbl">Precisión</div></div>
+    <div class="stat c4"><div class="stat-icon">📦</div><div class="stat-val">${d.total_dispensaciones}</div><div class="stat-lbl">Dispensaciones</div></div>
+    <div class="stat c1"><div class="stat-icon">⚖️</div><div class="stat-val">${(d.total_gramos/1000).toFixed(2)}kg</div><div class="stat-lbl">Total dispensado</div></div>
+  `;
+
+  // ROI
+  const roiColor = roi.roi_pct>=0?verde:rojo;
+  document.getElementById('roi-pct-big').style.color = roiColor;
+  document.getElementById('roi-pct-big').textContent = (roi.roi_pct>=0?'+':'')+roi.roi_pct+'%';
+  document.getElementById('roi-sub').innerHTML = roi.recuperado
+    ? `<span style="color:${verde}">✅ Inversión recuperada — ahorro neto: $${(roi.total_ahorrado-roi.costo_proyecto).toFixed(0)}</span>`
+    : `⏳ Se recupera en <b>${roi.meses_retorno.toFixed(1)} meses</b> — Costo proyecto: $${roi.costo_proyecto}`;
+
+  // Desglose
+  document.getElementById('ahorro-desglose').innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:10px">
+      ${barraAhorro('🍖 Comida (porciones exactas)',a.comida_pesos,a.total_pesos,'var(--accent3)',`${a.comida_gramos.toFixed(0)}g no desperdiciados`)}
+      ${barraAhorro('⏱️ Tiempo ahorrado',a.tiempo_pesos,a.total_pesos,'var(--accent)',`${a.tiempo_horas.toFixed(1)}h libres`)}
+      ${barraAhorro('🏥 Veterinario',a.veterinario_pesos,a.total_pesos,'var(--accent2)',`${d.config.visitas_vet_ahorradas} visita(s) evitada(s)`)}
+    </div>
+  `;
+
+  // Gráfica desglose
+  if(chartAhorroDesglose) chartAhorroDesglose.destroy();
+  chartAhorroDesglose = new Chart(document.getElementById('chart-ahorro-desglose'),{
+    type:'doughnut',
+    data:{
+      labels:['🍖 Comida','⏱️ Tiempo','🏥 Veterinario'],
+      datasets:[{data:[a.comida_pesos,a.tiempo_pesos,a.veterinario_pesos],
+        backgroundColor:['rgba(0,212,180,.7)','rgba(108,99,255,.7)','rgba(255,107,157,.7)'],
+        borderWidth:0}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'bottom',labels:{color:'#8899bb',font:{family:'Outfit',size:11},padding:10}}}}
+  });
+
+  // Proyección 12 meses
+  const meses=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const ahorro_mes = py.ahorro_mensual;
+  const acumulado  = meses.map((_,i)=>parseFloat((ahorro_mes*(i+1)).toFixed(2)));
+  const linea_inv  = meses.map(()=>roi.costo_proyecto);
+
+  if(chartProyeccion) chartProyeccion.destroy();
+  chartProyeccion = new Chart(document.getElementById('chart-proyeccion'),{
+    type:'line',
+    data:{
+      labels:meses,
+      datasets:[
+        {label:'Ahorro acumulado',data:acumulado,borderColor:'var(--success)',backgroundColor:'rgba(0,229,160,.1)',fill:true,tension:.4,pointRadius:3},
+        {label:'Costo del proyecto',data:linea_inv,borderColor:'var(--danger)',borderDash:[5,5],pointRadius:0,tension:0}
+      ]
+    },
+    options:{...chartDefaults}
+  });
+
+  // Métricas
+  document.getElementById('ahorro-metricas').innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:10px">
+      ${metricRow('📦','Total dispensado',d.total_gramos.toFixed(0)+' g','')}
+      ${metricRow('🎯','Precisión de dispensación',d.precision_pct+'%',d.precision_pct>=95?'✅ Excelente':d.precision_pct>=85?'🔶 Buena':'⚠️ Mejorable')}
+      ${metricRow('⚖️','Comida ahorrada (no desperdiciada)',a.comida_gramos.toFixed(0)+' g','vs alimentación manual')}
+      ${metricRow('⏱️','Tiempo recuperado',a.tiempo_horas.toFixed(1)+' horas',`$${a.tiempo_pesos.toFixed(0)} en valor`)}
+      ${metricRow('🍖','Costo comida por día','$'+py.costo_comida_dia.toFixed(2),'con porciones exactas')}
+      ${metricRow('📈','Proyección ahorro anual','$'+py.ahorro_anual.toFixed(0),'')}
+    </div>
+  `;
+
+  // Config form
+  const campos = [
+    {k:'costo_kg_alimento',l:'Costo por kg de alimento ($)',t:'number',step:'0.5'},
+    {k:'veces_manual_dia',l:'Veces que alimentabas al día',t:'number',step:'1'},
+    {k:'minutos_por_vez',l:'Minutos por alimentación manual',t:'number',step:'1'},
+    {k:'costo_hora_tiempo',l:'Valor de tu tiempo ($/hora)',t:'number',step:'5'},
+    {k:'costo_proyecto',l:'Costo del proyecto ($)',t:'number',step:'50'},
+    {k:'desperdicio_manual_pct',l:'% desperdicio sin control',t:'number',step:'1'},
+    {k:'consulta_vet_pesos',l:'Costo consulta veterinaria ($)',t:'number',step:'50'},
+    {k:'visitas_vet_ahorradas',l:'Visitas vet. evitadas/año',t:'number',step:'1'},
+  ];
+  document.getElementById('ahorro-config-form').innerHTML = campos.map(c=>`
+    <div class="fgm">
+      <label>${c.l}</label>
+      <input type="${c.t}" id="cfg-${c.k}" step="${c.step}" value="${biConfigData[c.k]||0}">
+    </div>`).join('');
+
+  // Tabla comparativa
+  const dias = d.dias_uso;
+  const sin_control_gramos = d.total_gramos * (1 + d.config.desperdicio_manual_pct/100);
+  const sin_control_costo  = (sin_control_gramos/1000)*d.config.costo_kg_alimento;
+  const con_control_costo  = (d.total_gramos/1000)*d.config.costo_kg_alimento;
+  const tiempo_sin = (dias*d.config.veces_manual_dia*d.config.minutos_por_vez/60).toFixed(1);
+  document.getElementById('ahorro-tabla').innerHTML = `
+    <tr><td>🍖 Comida consumida</td><td>${sin_control_gramos.toFixed(0)}g</td><td>${d.total_gramos.toFixed(0)}g</td><td style="color:var(--success);font-weight:700">-${a.comida_gramos.toFixed(0)}g</td></tr>
+    <tr><td>💵 Gasto en comida</td><td>$${sin_control_costo.toFixed(2)}</td><td>$${con_control_costo.toFixed(2)}</td><td style="color:var(--success);font-weight:700">$${a.comida_pesos.toFixed(2)}</td></tr>
+    <tr><td>⏱️ Tiempo dedicado</td><td>${tiempo_sin}h</td><td>0h (automático)</td><td style="color:var(--success);font-weight:700">${a.tiempo_horas.toFixed(1)}h libres</td></tr>
+    <tr><td>💊 Consultas vet.</td><td>${(d.config.visitas_vet_ahorradas||0)} visita(s)</td><td>0</td><td style="color:var(--success);font-weight:700">$${a.veterinario_pesos.toFixed(0)}</td></tr>
+    <tr><td>🎯 Precisión porción</td><td>~${(100-d.config.desperdicio_manual_pct).toFixed(0)}%</td><td>${d.precision_pct}%</td><td style="color:var(--success);font-weight:700">+${(d.precision_pct-(100-d.config.desperdicio_manual_pct)).toFixed(1)}%</td></tr>
+    <tr style="background:rgba(0,229,160,.06);font-weight:700">
+      <td>💰 TOTAL AHORRADO</td><td>—</td><td>—</td>
+      <td style="color:var(--success);font-size:1.1rem">$${a.total_pesos.toFixed(2)}</td>
+    </tr>
+  `;
+}
+
+function barraAhorro(label, valor, total, color, sub){
+  const pct = total>0 ? Math.round((valor/total)*100) : 0;
+  return `<div>
+    <div style="display:flex;justify-content:space-between;font-size:.83rem;margin-bottom:5px">
+      <span>${label}</span><span style="font-weight:700;color:${color}">$${valor.toFixed(0)}</span>
+    </div>
+    <div class="prog"><div class="prog-fill ok" style="width:${pct}%;background:${color}"></div></div>
+    <div style="font-size:.68rem;color:var(--text2);margin-top:2px">${sub} · ${pct}% del total</div>
+  </div>`;
+}
+
+function metricRow(icon, label, val, sub){
+  return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+    <span style="font-size:1.2rem;width:24px;text-align:center">${icon}</span>
+    <div style="flex:1"><div style="font-size:.85rem;font-weight:500">${label}</div>${sub?`<div style="font-size:.7rem;color:var(--text2)">${sub}</div>`:''}</div>
+    <span style="font-weight:800;color:var(--accent3);font-size:.95rem">${val}</span>
+  </div>`;
+}
+
+async function guardarConfigBI(){
+  const campos=['costo_kg_alimento','veces_manual_dia','minutos_por_vez','costo_hora_tiempo',
+                'costo_proyecto','desperdicio_manual_pct','consulta_vet_pesos','visitas_vet_ahorradas'];
+  const data={};
+  for(const k of campos){
+    const el=document.getElementById('cfg-'+k);
+    if(el) data[k]=parseFloat(el.value)||0;
+  }
+  try{
+    await api('PUT','/api/bi/config',data);
+    toast('Configuración guardada');
+    loadAhorro();
+  }catch(e){ toast(e.message,'err'); }
+}
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+document.querySelectorAll('.dia-btn').forEach(b => b.onclick = () => b.classList.toggle('sel'));
+
+if (TOKEN && USER) initApp();
+else { document.getElementById('auth').style.display='flex'; document.getElementById('app').style.display='none'; }
+</script>
+</body>
+</html>
