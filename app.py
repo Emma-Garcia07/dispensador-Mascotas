@@ -26,10 +26,10 @@ TOKEN_DAYS = 7
 
 # ── CONFIG MySQL ──────────────────────────────────────────────────────────────
 DB_CONFIG = {
-    "host": os.environ.get("MYSQLHOST") or os.environ.get("MYSQL_HOST", "localhost"),
-"database": os.environ.get("MYSQLDATABASE") or os.environ.get("MYSQL_DATABASE", "petfeeder"),
+    "host":     os.environ.get("MYSQL_HOST") or os.environ.get("MYSQLHOST", "localhost"),
     "user":     os.environ.get("MYSQLUSER", "petfeeder"),
     "password": os.environ.get("MYSQLPASSWORD", "pf2026secure"),
+    "database": os.environ.get("MYSQL_DATABASE") or os.environ.get("MYSQLDATABASE", "petfeeder"),
     "port":     int(os.environ.get("MYSQLPORT", 3306)),
     "charset":  "utf8mb4",
     "cursorclass": pymysql.cursors.DictCursor,
