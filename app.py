@@ -1038,7 +1038,48 @@ def bi_alertas():
 @app.route("/api/health")
 def health():
     return jsonify(ok=True,app="PetFeeder IoT v4",db="MySQL",hardware=HARDWARE_OK,dht=DHT_OK,peso=PESO_OK)
+# ── ENDPOINTS RASPBERRY PI ────────────────────────────────────────────────────
+pi_sensores = {"temperatura": None, "humedad": None, "peso": None, "hardware": {}, "updated_at": None}
+pi_ordenes  = []
+pi_orden_id = 0
 
+@app.route("/api/pi/sensores", methods=["POST"])
+@auth_required
+def pi_recibir_sensores():
+    global pi_sensores
+    d = request.get_json() or {}
+    pi_sensores.update(d)
+    pi_sensores["updated_at"] = datetime.now().strftime("%H:%M:%S")
+    # Actualizar cache de sensores para que el dashboard los muestre
+    if d.get("temperatura"):
+        sensor_cache["dht"] = {"ok": True, "temperatura": d["temperatura"], "humedad": d.get("humedad")}
+    if d.get("peso") is not None:
+        sensor_cache["peso"] = {"ok": True, "gramos": d["peso"]}
+    return jsonify(ok=True)
+
+@app.route("/api/pi/ordenes", methods=["GET"])
+@auth_required
+def pi_get_ordenes():
+    pendientes = [o for o in pi_ordenes if not o.get("ejecutada")]
+    return jsonify(ok=True, ordenes=pendientes)
+
+@app.route("/api/pi/ordenes/<int:oid>/confirmar", methods=["POST"])
+@auth_required
+def pi_confirmar_orden(oid):
+    for o in pi_ordenes:
+        if o["id"] == oid:
+            o["ejecutada"] = True
+            break
+    return jsonify(ok=True)
+
+@app.route("/api/pi/dispensar", methods=["POST"])
+@auth_required
+def pi_pedir_dispensar():
+    global pi_orden_id
+    d = request.get_json() or {}
+    pi_orden_id += 1
+    pi_ordenes.append({"id": pi_orden_id, "tipo": "dispensar", "gramos": d.get("gramos", 100), "ejecutada": False})
+    return jsonify(ok=True, orden_id=pi_orden_id)
 # Inicializar siempre (gunicorn o directo)
 try:
     init_db()
