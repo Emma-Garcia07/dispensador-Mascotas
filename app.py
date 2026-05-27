@@ -1039,12 +1039,15 @@ def bi_alertas():
 def health():
     return jsonify(ok=True,app="PetFeeder IoT v4",db="MySQL",hardware=HARDWARE_OK,dht=DHT_OK,peso=PESO_OK)
 
+# Inicializar siempre (gunicorn o directo)
+try:
+    init_db()
+except Exception as e:
+    print(f"⚠️  init_db falló: {e}")
+
+threading.Thread(target=cron_loop, daemon=True).start()
+
 if __name__=="__main__":
-    try:
-        init_db()
-    except Exception as e:
-        print(f"⚠️  init_db falló: {e}")
-    threading.Thread(target=cron_loop,daemon=True).start()
     PORT = int(os.environ.get("PORT", 5001))
     print(f"\n🚀 PetFeeder IoT v4 en http://0.0.0.0:{PORT}")
     app.run(host="0.0.0.0", port=PORT, debug=False, threaded=True)
