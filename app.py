@@ -26,10 +26,10 @@ TOKEN_DAYS = 7
 
 # ── CONFIG MySQL ──────────────────────────────────────────────────────────────
 DB_CONFIG = {
-    "host":     os.environ.get("MYSQLHOST", "localhost"),
+    "host": os.environ.get("MYSQLHOST") or os.environ.get("MYSQL_HOST", "localhost"),
+"database": os.environ.get("MYSQLDATABASE") or os.environ.get("MYSQL_DATABASE", "petfeeder"),
     "user":     os.environ.get("MYSQLUSER", "petfeeder"),
     "password": os.environ.get("MYSQLPASSWORD", "pf2026secure"),
-    "database": os.environ.get("MYSQLDATABASE", "petfeeder"),
     "port":     int(os.environ.get("MYSQLPORT", 3306)),
     "charset":  "utf8mb4",
     "cursorclass": pymysql.cursors.DictCursor,
@@ -1040,8 +1040,11 @@ def health():
     return jsonify(ok=True,app="PetFeeder IoT v4",db="MySQL",hardware=HARDWARE_OK,dht=DHT_OK,peso=PESO_OK)
 
 if __name__=="__main__":
-    init_db()
+    try:
+        init_db()
+    except Exception as e:
+        print(f"⚠️  init_db falló: {e}")
     threading.Thread(target=cron_loop,daemon=True).start()
-    print("\n🚀 PetFeeder IoT v4 en http://0.0.0.0:5001")
-    print(f"   MySQL: ✅  Servo: {'✅' if HARDWARE_OK else '⚡'}  DHT11: {'✅' if DHT_OK else '⚡'}  Peso: {'✅' if PESO_OK else '⚡'}")
-    app.run(host="0.0.0.0",port=5001,debug=False,threaded=True)
+    PORT = int(os.environ.get("PORT", 5001))
+    print(f"\n🚀 PetFeeder IoT v4 en http://0.0.0.0:{PORT}")
+    app.run(host="0.0.0.0", port=PORT, debug=False, threaded=True)
