@@ -737,16 +737,15 @@ def disp_manual():
     return jsonify(ok=True,message="Dispensando..."),201
 
 # SERVO
-@app.route("/api/compuerta",methods=["POST"])
+@app.route("/api/compuerta", methods=["POST"])
 @auth_required
 def compuerta():
-    accion=(request.get_json() or {}).get("accion","cerrar")
-    angulo,estado=(90,"abierto") if accion=="abrir" else (45,"cerrado")
-    servo_state.update(estado=estado,angulo=angulo)
-    if HARDWARE_OK and mg995:
-        try: mg995.angle=angulo
-        except Exception as e: return jsonify(ok=False,message=str(e)),500
-    return jsonify(ok=True,estado=estado,angulo=angulo,simulado=not HARDWARE_OK)
+    global pi_orden_id
+    accion = (request.get_json() or {}).get("accion", "cerrar")
+    angulo = 90 if accion == "abrir" else 45
+    pi_orden_id += 1
+    pi_ordenes.append({"id": pi_orden_id, "tipo": "servo", "angulo": angulo, "ejecutada": False})
+    return jsonify(ok=True, estado="abierto" if accion=="abrir" else "cerrado", angulo=angulo)
 
 @app.route("/api/compuerta/estado")
 @auth_required
@@ -987,14 +986,16 @@ def pi_confirmar_orden(oid):
             break
     return jsonify(ok=True)
 
-@app.route("/api/pi/dispensar", methods=["POST"])
+@app.route("/api/pi/servo", methods=["POST"])
 @auth_required
-def pi_pedir_dispensar():
+def pi_pedir_servo():
     global pi_orden_id
     d = request.get_json() or {}
     pi_orden_id += 1
-    pi_ordenes.append({"id": pi_orden_id, "tipo": "dispensar", "gramos": d.get("gramos", 100), "ejecutada": False})
+    pi_ordenes.append({"id": pi_orden_id, "tipo": "servo", "angulo": d.get("angulo", 45), "ejecutada": False})
     return jsonify(ok=True, orden_id=pi_orden_id)
+@auth_required
+
 
 # INICIALIZAR
 try:
