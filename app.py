@@ -486,13 +486,25 @@ def dashboard():
                     "hardware":{"servo":HARDWARE_OK,"dht":DHT_OK,"peso":PESO_OK}}
     })
 
-# SENSORES
 @app.route("/api/sensores/estado")
 @auth_required
 def sensores_estado():
-    return jsonify(ok=True,data={"dht":sensor_cache["dht"],"peso":sensor_cache["peso"],
-        "servo":servo_state,"hardware":{"servo":HARDWARE_OK,"dht":DHT_OK,"peso":PESO_OK}})
-
+    # Si la Pi no ha mandado datos en los últimos 30 segundos, limpiar
+    ultima = pi_sensores.get("updated_at")
+    pi_conectada = ultima and (datetime.now() - ultima).seconds < 30
+    if not pi_conectada:
+        cache_dht  = {"ok": False, "temperatura": None, "humedad": None}
+        cache_peso = {"ok": False, "gramos": None}
+    else:
+        cache_dht  = sensor_cache["dht"]
+        cache_peso = sensor_cache["peso"]
+    return jsonify(ok=True, data={
+        "dht": cache_dht,
+        "peso": cache_peso,
+        "servo": servo_state,
+        "hardware": {"servo": HARDWARE_OK, "dht": DHT_OK, "peso": PESO_OK},
+        "pi_conectada": pi_conectada
+    })
 @app.route("/api/sensores/historial")
 @auth_required
 def sensores_historial():
@@ -964,7 +976,7 @@ def pi_recibir_sensores():
     global pi_sensores
     d = request.get_json() or {}
     pi_sensores.update(d)
-    pi_sensores["updated_at"] = datetime.now().strftime("%H:%M:%S")
+    pi_sensores["updated_at"] = datetime.now()
     if d.get("temperatura"):
         sensor_cache["dht"] = {"ok": True, "temperatura": d["temperatura"], "humedad": d.get("humedad")}
     if d.get("peso") is not None:
