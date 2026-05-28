@@ -994,7 +994,7 @@ def pi_pedir_servo():
     pi_orden_id += 1
     pi_ordenes.append({"id": pi_orden_id, "tipo": "servo", "angulo": d.get("angulo", 45), "ejecutada": False})
     return jsonify(ok=True, orden_id=pi_orden_id)
-@auth_required
+
 
 
 # INICIALIZAR
