@@ -3,9 +3,9 @@
 PetFeeder IoT v4
 - MySQL/MariaDB (base de datos real)
 - DHT11 temperatura/humedad
-- HX711 peso vía Arduino USB
+- HX711 peso via Arduino USB
 - PCA9685 + Servo MG995
-- BI con cálculo de ahorro económico
+- BI con calculo de ahorro economico
 """
 import os, hashlib, hmac, time, threading, json, base64, re
 try:
@@ -24,7 +24,7 @@ STATIC_DIR = BASE_DIR / "static"
 JWT_SECRET = os.environ.get("JWT_SECRET", "petfeeder_v4_2026")
 TOKEN_DAYS = 7
 
-# ── CONFIG MySQL ──────────────────────────────────────────────────────────────
+# CONFIG MySQL
 DB_CONFIG = {
     "host":     os.environ.get("MYSQL_HOST") or os.environ.get("MYSQLHOST", "localhost"),
     "user":     os.environ.get("MYSQLUSER", "petfeeder"),
@@ -36,22 +36,10 @@ DB_CONFIG = {
     "autocommit": False,
 }
 
-# ── CONFIG BI (costos del proyecto) ──────────────────────────────────────────
-BI_CONFIG = {
-    "costo_kg_alimento":    27.0,   # promedio entre 24 y 30 pesos
-    "veces_manual_dia":     2,      # veces que alimentabas manualmente
-    "minutos_por_vez":      5,      # minutos que tomaba cada vez
-    "costo_hora_tiempo":    50.0,   # valor de tu tiempo en pesos/hora
-    "costo_proyecto":       1000.0, # promedio entre 800 y 1200 pesos
-    "desperdicio_manual_pct": 15.0, # % de comida desperdiciada sin control (estimado)
-    "consulta_vet_pesos":   500.0,  # costo promedio consulta veterinaria
-    "visitas_vet_ahorradas_año": 1, # visitas evitadas por alimentación regular
-}
-
 app = Flask(__name__, static_folder=str(STATIC_DIR))
 servo_state = {"estado": "cerrado", "angulo": 45}
 
-# ── PCA9685 + SERVO ───────────────────────────────────────────────────────────
+# PCA9685 + SERVO
 try:
     import board, busio
     from adafruit_pca9685 import PCA9685
@@ -62,22 +50,22 @@ try:
     mg995 = adafruit_servo.Servo(pca.channels[0], min_pulse=500, max_pulse=2500, actuation_range=180)
     mg995.angle = 45
     HARDWARE_OK = True
-    print("✅ Servo OK")
+    print("Servo OK")
 except Exception as e:
     HARDWARE_OK = False; mg995 = None
-    print(f"⚠️  Servo sim ({e})")
+    print(f"Servo sim ({e})")
 
-# ── DHT11 ─────────────────────────────────────────────────────────────────────
+# DHT11
 try:
     import adafruit_dht, board as _board
     dht_sensor = adafruit_dht.DHT11(_board.D18)
     DHT_OK = True
-    print("✅ DHT11 OK")
+    print("DHT11 OK")
 except Exception as e:
     DHT_OK = False; dht_sensor = None
-    print(f"⚠️  DHT11 sim ({e})")
+    print(f"DHT11 sim ({e})")
 
-# ── PESO vía Arduino ──────────────────────────────────────────────────────────
+# PESO via Arduino
 peso_serial   = None
 peso_actual   = 0.0
 peso_zero_ref = 0.0
@@ -86,10 +74,10 @@ try:
     peso_serial = pyserial.Serial('/dev/ttyUSB0', 9600, timeout=1)
     time.sleep(2)
     PESO_OK = True
-    print("✅ Arduino Serial OK")
+    print("Arduino Serial OK")
 except Exception as e:
     PESO_OK = False
-    print(f"⚠️  Peso sim ({e})")
+    print(f"Peso sim ({e})")
 
 def leer_peso_serial():
     if not peso_serial: return None
@@ -99,7 +87,7 @@ def leer_peso_serial():
     except: pass
     return None
 
-# ── CACHE SENSORES ────────────────────────────────────────────────────────────
+# CACHE SENSORES
 sensor_cache = {
     "dht":  {"ok": False, "temperatura": None, "humedad": None},
     "peso": {"ok": False, "gramos": 0.0},
@@ -109,7 +97,6 @@ sensor_history = {"temperatura": [], "humedad": [], "peso": []}
 def sensor_worker():
     global peso_actual
     while True:
-        # DHT11
         try:
             if DHT_OK and dht_sensor:
                 t = dht_sensor.temperature
@@ -120,7 +107,6 @@ def sensor_worker():
                     sensor_history["humedad"].append({"t":datetime.now().strftime("%H:%M"),"v":h})
                     for k in ["temperatura","humedad"]:
                         if len(sensor_history[k]) > 60: sensor_history[k].pop(0)
-                    # Guardar en BD cada 5 min
                     if datetime.now().minute % 5 == 0 and datetime.now().second < 3:
                         try:
                             db = get_db_direct()
@@ -129,7 +115,6 @@ def sensor_worker():
                             db.commit(); db.close()
                         except: pass
         except: pass
-        # PESO
         try:
             raw = leer_peso_serial()
             if raw is not None:
@@ -142,7 +127,7 @@ def sensor_worker():
 
 threading.Thread(target=sensor_worker, daemon=True).start()
 
-# ── DB ────────────────────────────────────────────────────────────────────────
+# DB
 def get_db_direct():
     return pymysql.connect(**DB_CONFIG)
 
@@ -177,7 +162,6 @@ def init_db():
             activo TINYINT DEFAULT 1,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4""")
-
         cur.execute("""CREATE TABLE IF NOT EXISTS mascotas (
             id INT AUTO_INCREMENT PRIMARY KEY,
             usuario_id INT NOT NULL,
@@ -191,7 +175,6 @@ def init_db():
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4""")
-
         cur.execute("""CREATE TABLE IF NOT EXISTS alimentos (
             id INT AUTO_INCREMENT PRIMARY KEY,
             mascota_id INT NOT NULL,
@@ -202,7 +185,6 @@ def init_db():
             calorias_100g DECIMAL(6,2),
             FOREIGN KEY (mascota_id) REFERENCES mascotas(id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4""")
-
         cur.execute("""CREATE TABLE IF NOT EXISTS dispensadores (
             id INT AUTO_INCREMENT PRIMARY KEY,
             usuario_id INT NOT NULL,
@@ -216,7 +198,6 @@ def init_db():
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4""")
-
         cur.execute("""CREATE TABLE IF NOT EXISTS horarios (
             id INT AUTO_INCREMENT PRIMARY KEY,
             mascota_id INT NOT NULL,
@@ -231,7 +212,6 @@ def init_db():
             FOREIGN KEY (mascota_id) REFERENCES mascotas(id) ON DELETE CASCADE,
             FOREIGN KEY (dispensador_id) REFERENCES dispensadores(id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4""")
-
         cur.execute("""CREATE TABLE IF NOT EXISTS dispensaciones (
             id INT AUTO_INCREMENT PRIMARY KEY,
             horario_id INT,
@@ -249,7 +229,6 @@ def init_db():
             FOREIGN KEY (mascota_id) REFERENCES mascotas(id) ON DELETE CASCADE,
             FOREIGN KEY (dispensador_id) REFERENCES dispensadores(id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4""")
-
         cur.execute("""CREATE TABLE IF NOT EXISTS notificaciones (
             id INT AUTO_INCREMENT PRIMARY KEY,
             usuario_id INT NOT NULL,
@@ -260,14 +239,12 @@ def init_db():
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4""")
-
         cur.execute("""CREATE TABLE IF NOT EXISTS lecturas_ambiente (
             id INT AUTO_INCREMENT PRIMARY KEY,
             temperatura DECIMAL(4,1),
             humedad DECIMAL(4,1),
             leido_at DATETIME DEFAULT CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4""")
-
         cur.execute("""CREATE TABLE IF NOT EXISTS config_bi (
             id INT AUTO_INCREMENT PRIMARY KEY,
             usuario_id INT NOT NULL,
@@ -276,10 +253,7 @@ def init_db():
             UNIQUE KEY uk_config(usuario_id, clave),
             FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4""")
-
         db.commit()
-
-        # Datos demo si no existen
         cur.execute("SELECT COUNT(*) as c FROM usuarios")
         if cur.fetchone()["c"] == 0:
             h = hashlib.sha256("demo123".encode()).hexdigest()
@@ -293,7 +267,7 @@ def init_db():
                        (uid,"Luna","perro","Labrador","2019-07-22",22.5))
             mid2 = cur.lastrowid
             cur.execute("INSERT INTO mascotas(usuario_id,nombre,especie,raza,fecha_nac,peso_kg) VALUES(%s,%s,%s,%s,%s,%s)",
-                       (uid,"Michi","gato","Siamés","2022-01-10",4.5))
+                       (uid,"Michi","gato","Siames","2022-01-10",4.5))
             mid3 = cur.lastrowid
             cur.execute("INSERT INTO alimentos(mascota_id,marca,nombre_producto,tipo) VALUES(%s,%s,%s,%s)",
                        (mid1,"Purina","Pro Plan Adulto","seco"))
@@ -305,7 +279,7 @@ def init_db():
                        (uid,"Dispensador Sala","PetFeeder Pro v2",5000.0,3200.0))
             did1 = cur.lastrowid
             cur.execute("INSERT INTO dispensadores(usuario_id,nombre,modelo,capacidad_g,nivel_actual_g) VALUES(%s,%s,%s,%s,%s)",
-                       (uid,"Dispensador Jardín","PetFeeder Mini",2000.0,800.0))
+                       (uid,"Dispensador Jardin","PetFeeder Mini",2000.0,800.0))
             did2 = cur.lastrowid
             cur.execute("INSERT INTO horarios(mascota_id,dispensador_id,nombre,hora,porcion_g) VALUES(%s,%s,%s,%s,%s)",
                        (mid1,did1,"Desayuno Max","08:00:00",150.0))
@@ -315,7 +289,6 @@ def init_db():
                        (mid2,did1,"Desayuno Luna","09:30:00",120.0))
             cur.execute("INSERT INTO horarios(mascota_id,dispensador_id,nombre,hora,porcion_g,dias_semana) VALUES(%s,%s,%s,%s,%s,%s)",
                        (mid3,did2,"Almuerzo Michi","12:00:00",80.0,"lunes,martes,miercoles,jueves,viernes"))
-            # Historial 20 días
             for i in range(40):
                 fecha = (datetime.now()-timedelta(hours=i*12)).strftime("%Y-%m-%d %H:%M:%S")
                 mid   = [mid1,mid2,mid3][i%3]
@@ -324,30 +297,25 @@ def init_db():
                 hum   = round(55+(i%10),1)
                 cur.execute("INSERT INTO dispensaciones(mascota_id,dispensador_id,gramos_programados,gramos_real,tipo,exitosa,temperatura,humedad,ejecutado_at) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s)",
                            (mid,did,150.0,145.0+i%10,"automatico",1,temp,hum,fecha))
-            # Lecturas ambiente
             for i in range(96):
                 fecha = (datetime.now()-timedelta(minutes=i*15)).strftime("%Y-%m-%d %H:%M:%S")
                 cur.execute("INSERT INTO lecturas_ambiente(temperatura,humedad,leido_at) VALUES(%s,%s,%s)",
                            (round(22+(i%8)*0.5,1),round(55+(i%12),1),fecha))
-            # Config BI defaults
-            defaults = [
-                ("costo_kg_alimento",27.0),("veces_manual_dia",2.0),
-                ("minutos_por_vez",5.0),("costo_hora_tiempo",50.0),
-                ("costo_proyecto",1000.0),("desperdicio_manual_pct",15.0),
-                ("consulta_vet_pesos",500.0),("visitas_vet_ahorradas",1.0),
-            ]
+            defaults = [("costo_kg_alimento",27.0),("veces_manual_dia",2.0),("minutos_por_vez",5.0),
+                        ("costo_hora_tiempo",50.0),("costo_proyecto",1000.0),("desperdicio_manual_pct",15.0),
+                        ("consulta_vet_pesos",500.0),("visitas_vet_ahorradas",1.0)]
             for k,v in defaults:
                 cur.execute("INSERT INTO config_bi(usuario_id,clave,valor) VALUES(%s,%s,%s)",(uid,k,v))
             cur.execute("INSERT INTO notificaciones(usuario_id,tipo,titulo,mensaje) VALUES(%s,%s,%s,%s)",
-                       (uid,"dispensado","Max ha comido ✅","Se dispensaron 150g a las 08:00."))
+                       (uid,"dispensado","Max ha comido","Se dispensaron 150g a las 08:00."))
             cur.execute("INSERT INTO notificaciones(usuario_id,tipo,titulo,mensaje) VALUES(%s,%s,%s,%s)",
-                       (uid,"nivel_bajo","⚠️ Nivel bajo","Dispensador Jardín tiene solo 800g."))
+                       (uid,"nivel_bajo","Nivel bajo","Dispensador Jardin tiene solo 800g."))
             db.commit()
-            print("✅ Datos demo cargados")
+            print("Datos demo cargados")
     db.close()
-    print("✅ MySQL listo")
+    print("MySQL listo")
 
-# ── JWT ───────────────────────────────────────────────────────────────────────
+# JWT
 def _b64(d): return base64.urlsafe_b64encode(d).rstrip(b"=").decode()
 def _d64(s): return base64.urlsafe_b64decode(s+"="*(4-len(s)%4))
 
@@ -376,12 +344,12 @@ def auth_required(f):
         hdr = request.headers.get("Authorization","")
         if not hdr.startswith("Bearer "): return jsonify(ok=False,message="No autorizado"),401
         p = verify_token(hdr.split(" ",1)[1])
-        if not p: return jsonify(ok=False,message="Token inválido o expirado.",expired=True),401
+        if not p: return jsonify(ok=False,message="Token invalido o expirado.",expired=True),401
         g.usuario = p
         return f(*a,**k)
     return w
 
-# ── DISPENSACIÓN INTELIGENTE ──────────────────────────────────────────────────
+# DISPENSACION
 def dispensar_con_peso(porcion_g, timeout=30):
     global peso_zero_ref
     if not HARDWARE_OK or not mg995:
@@ -401,7 +369,7 @@ def dispensar_con_peso(porcion_g, timeout=30):
     mg995.angle = 45; servo_state.update(estado="cerrado",angulo=45)
     return round(gr,1)
 
-# ── CRON ──────────────────────────────────────────────────────────────────────
+# CRON
 def cron_loop():
     dias_map = ["lunes","martes","miercoles","jueves","viernes","sabado","domingo"]
     while True:
@@ -415,7 +383,7 @@ def cron_loop():
                     SELECT h.*,d.nivel_actual_g,m.usuario_id,m.nombre AS mn
                     FROM horarios h JOIN dispensadores d ON d.id=h.dispensador_id
                     JOIN mascotas m ON m.id=h.mascota_id
-                    WHERE h.activo=1 AND TIME_FORMAT(h.hora,'%H:%i')=%s
+                    WHERE h.activo=1 AND TIME_FORMAT(h.hora,'%%H:%%i')=%s
                       AND FIND_IN_SET(%s,h.dias_semana) AND d.activo=1 AND m.activo=1
                 """,(hm,dia))
                 hs = cur.fetchall()
@@ -433,7 +401,7 @@ def cron_loop():
                             c.execute("UPDATE dispensadores SET nivel_actual_g=GREATEST(0,nivel_actual_g-%s) WHERE id=%s",
                                      (horario["porcion_g"],horario["dispensador_id"]))
                             c.execute("INSERT INTO notificaciones(usuario_id,tipo,titulo,mensaje) VALUES(%s,%s,%s,%s)",
-                                     (horario["usuario_id"],"dispensado",f"{horario['mn']} ha comido ✅",f"Se dispensaron {gr}g a las {hm}."))
+                                     (horario["usuario_id"],"dispensado",f"{horario['mn']} ha comido",f"Se dispensaron {gr}g a las {hm}."))
                         db2.commit(); db2.close()
                     threading.Thread(target=do_disp,daemon=True).start()
                 else:
@@ -442,24 +410,24 @@ def cron_loop():
                         c.execute("INSERT INTO dispensaciones(horario_id,mascota_id,dispensador_id,gramos_programados,gramos_real,tipo,exitosa,codigo_error,temperatura,humedad) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
                                  (h["id"],h["mascota_id"],h["dispensador_id"],h["porcion_g"],0,"automatico",0,"NIVEL_INSUFICIENTE",temp,hum))
                         c.execute("INSERT INTO notificaciones(usuario_id,tipo,titulo,mensaje) VALUES(%s,%s,%s,%s)",
-                                 (h["usuario_id"],"sin_comida","❌ No se pudo dispensar",f"Sin comida para {h['mn']}."))
+                                 (h["usuario_id"],"sin_comida","No se pudo dispensar",f"Sin comida para {h['mn']}."))
                     db2.commit(); db2.close()
             db.close()
         except Exception as e: print(f"[Cron] {e}")
         time.sleep(60)
 
-# ── RUTAS ESTÁTICAS ───────────────────────────────────────────────────────────
+# RUTAS ESTATICAS
 @app.route("/")
 def index(): return send_from_directory(str(STATIC_DIR),"index.html")
 @app.route("/<path:f>")
 def static_f(f): return send_from_directory(str(STATIC_DIR),f)
 
-# ── AUTH ──────────────────────────────────────────────────────────────────────
+# AUTH
 @app.route("/api/auth/login",methods=["POST"])
 def login():
     d=request.get_json() or {}
     em=d.get("email","").strip().lower(); pw=d.get("password","")
-    if not em or not pw: return jsonify(ok=False,message="Email y contraseña requeridos"),400
+    if not em or not pw: return jsonify(ok=False,message="Email y contrasena requeridos"),400
     row=query("SELECT * FROM usuarios WHERE email=%s AND activo=1",(em,),one=True)
     if not row or not cp(pw,row["password_hash"]): return jsonify(ok=False,message="Credenciales incorrectas"),401
     token=create_token({"id":row["id"],"email":row["email"],"nombre":row["nombre"]})
@@ -470,11 +438,10 @@ def register():
     d=request.get_json() or {}
     nombre=d.get("nombre","").strip(); email=d.get("email","").strip().lower(); pw=d.get("password","")
     if not nombre: return jsonify(ok=False,message="Nombre requerido"),400
-    if not re.match(r"[^@\s]+@[^@\s]+\.[^@\s]+",email): return jsonify(ok=False,message="Email inválido"),400
-    if len(pw)<6: return jsonify(ok=False,message="Contraseña mínimo 6 caracteres"),400
+    if not re.match(r"[^@\s]+@[^@\s]+\.[^@\s]+",email): return jsonify(ok=False,message="Email invalido"),400
+    if len(pw)<6: return jsonify(ok=False,message="Contrasena minimo 6 caracteres"),400
     if query("SELECT id FROM usuarios WHERE email=%s",(email,),one=True): return jsonify(ok=False,message="Email ya registrado"),409
     uid=query("INSERT INTO usuarios(nombre,email,password_hash) VALUES(%s,%s,%s)",(nombre,email,hp(pw)),commit=True,lastid=True)
-    # Config BI defaults para nuevo usuario
     defaults=[("costo_kg_alimento",27.0),("veces_manual_dia",2.0),("minutos_por_vez",5.0),
               ("costo_hora_tiempo",50.0),("costo_proyecto",1000.0),("desperdicio_manual_pct",15.0),
               ("consulta_vet_pesos",500.0),("visitas_vet_ahorradas",1.0)]
@@ -483,7 +450,7 @@ def register():
     token=create_token({"id":uid,"email":email,"nombre":nombre})
     return jsonify(ok=True,token=token,usuario={"id":uid,"nombre":nombre,"email":email}),201
 
-# ── DASHBOARD ─────────────────────────────────────────────────────────────────
+# DASHBOARD
 @app.route("/api/dashboard")
 @auth_required
 def dashboard():
@@ -494,11 +461,11 @@ def dashboard():
     disps=[r for r in query("""SELECT id,nombre,nivel_actual_g,capacidad_g,
         CASE WHEN capacidad_g>0 THEN ROUND(nivel_actual_g*100.0/capacidad_g,1) ELSE 0 END AS nivel_pct
         FROM dispensadores WHERE usuario_id=%s AND activo=1 ORDER BY nombre""",(uid,))]
-    proximas=[r for r in query("""SELECT TIME_FORMAT(h.hora,'%H:%i') AS hora,h.porcion_g,
+    proximas=[r for r in query("""SELECT TIME_FORMAT(h.hora,'%%H:%%i') AS hora,h.porcion_g,
         m.nombre AS mascota_nombre,m.especie,d.nombre AS dispensador_nombre
         FROM horarios h JOIN mascotas m ON m.id=h.mascota_id JOIN dispensadores d ON d.id=h.dispensador_id
         WHERE m.usuario_id=%s AND h.activo=1 AND m.activo=1
-          AND FIND_IN_SET(%s,h.dias_semana) AND TIME_FORMAT(h.hora,'%H:%i')>%s
+          AND FIND_IN_SET(%s,h.dias_semana) AND TIME_FORMAT(h.hora,'%%H:%%i')>%s
         ORDER BY h.hora LIMIT 5""",(uid,dia,hora))]
     stats=query("""SELECT COUNT(*) AS tomas,COALESCE(SUM(gramos_real),0) AS gramos,
         SUM(CASE WHEN exitosa=0 THEN 1 ELSE 0 END) AS fallidas
@@ -519,7 +486,7 @@ def dashboard():
                     "hardware":{"servo":HARDWARE_OK,"dht":DHT_OK,"peso":PESO_OK}}
     })
 
-# ── SENSORES ──────────────────────────────────────────────────────────────────
+# SENSORES
 @app.route("/api/sensores/estado")
 @auth_required
 def sensores_estado():
@@ -541,7 +508,7 @@ def peso_zero():
     sensor_cache["peso"]["gramos"]=0.0
     return jsonify(ok=True,message="Peso en cero")
 
-# ── MASCOTAS ──────────────────────────────────────────────────────────────────
+# MASCOTAS
 @app.route("/api/mascotas",methods=["GET"])
 @auth_required
 def mascotas_listar():
@@ -597,7 +564,7 @@ def mascotas_eliminar(mid):
     query("UPDATE mascotas SET activo=0 WHERE id=%s",(mid,),commit=True)
     return jsonify(ok=True,message="Eliminada")
 
-# ── DISPENSADORES ─────────────────────────────────────────────────────────────
+# DISPENSADORES
 @app.route("/api/dispensadores",methods=["GET"])
 @auth_required
 def disps_listar():
@@ -643,7 +610,7 @@ def disps_actualizar(did):
 @auth_required
 def disps_nivel(did):
     nivel=float((request.get_json() or {}).get("nivel_actual_g",-1))
-    if nivel<0: return jsonify(ok=False,message="Nivel inválido"),400
+    if nivel<0: return jsonify(ok=False,message="Nivel invalido"),400
     if not query("SELECT id FROM dispensadores WHERE id=%s AND usuario_id=%s AND activo=1",(did,g.usuario["id"]),one=True):
         return jsonify(ok=False,message="No encontrado"),404
     query("UPDATE dispensadores SET nivel_actual_g=%s WHERE id=%s",(nivel,did),commit=True)
@@ -657,11 +624,11 @@ def disps_eliminar(did):
     query("UPDATE dispensadores SET activo=0 WHERE id=%s",(did,),commit=True)
     return jsonify(ok=True,message="Eliminado")
 
-# ── HORARIOS ──────────────────────────────────────────────────────────────────
+# HORARIOS
 @app.route("/api/horarios",methods=["GET"])
 @auth_required
 def horarios_listar():
-    rows=query("""SELECT h.*,TIME_FORMAT(h.hora,'%H:%i') AS hora_fmt,
+    rows=query("""SELECT h.*,TIME_FORMAT(h.hora,'%%H:%%i') AS hora_fmt,
         m.nombre AS mascota_nombre,m.especie,d.nombre AS dispensador_nombre,d.nivel_actual_g
         FROM horarios h JOIN mascotas m ON m.id=h.mascota_id JOIN dispensadores d ON d.id=h.dispensador_id
         WHERE m.usuario_id=%s AND m.activo=1 ORDER BY h.hora""",(g.usuario["id"],))
@@ -685,7 +652,7 @@ def horarios_crear():
 @app.route("/api/horarios/<int:hid>",methods=["GET"])
 @auth_required
 def horarios_obtener(hid):
-    row=query("""SELECT h.*,TIME_FORMAT(h.hora,'%H:%i') AS hora_fmt,
+    row=query("""SELECT h.*,TIME_FORMAT(h.hora,'%%H:%%i') AS hora_fmt,
         m.nombre AS mascota_nombre,d.nombre AS dispensador_nombre
         FROM horarios h JOIN mascotas m ON m.id=h.mascota_id JOIN dispensadores d ON d.id=h.dispensador_id
         WHERE h.id=%s AND m.usuario_id=%s""",(hid,g.usuario["id"]),one=True)
@@ -722,7 +689,7 @@ def horarios_eliminar(hid):
     query("DELETE FROM horarios WHERE id=%s",(hid,),commit=True)
     return jsonify(ok=True,message="Eliminado")
 
-# ── DISPENSACIONES ────────────────────────────────────────────────────────────
+# DISPENSACIONES
 @app.route("/api/dispensaciones",methods=["GET"])
 @auth_required
 def disps_hist():
@@ -764,12 +731,12 @@ def disp_manual():
                       (mid,did,gramos,gr,"manual",1,d.get("nota") or "Manual",temp,hum))
             c.execute("UPDATE dispensadores SET nivel_actual_g=GREATEST(0,nivel_actual_g-%s) WHERE id=%s",(gramos,did))
             c.execute("INSERT INTO notificaciones(usuario_id,tipo,titulo,mensaje) VALUES(%s,%s,%s,%s)",
-                      (uid,"dispensado",f"{mascota['nombre']} ha comido ✅",f"Se dispensaron {gr}g manualmente."))
+                      (uid,"dispensado",f"{mascota['nombre']} ha comido",f"Se dispensaron {gr}g manualmente."))
         db2.commit(); db2.close()
     threading.Thread(target=do_disp,daemon=True).start()
     return jsonify(ok=True,message="Dispensando..."),201
 
-# ── SERVO ─────────────────────────────────────────────────────────────────────
+# SERVO
 @app.route("/api/compuerta",methods=["POST"])
 @auth_required
 def compuerta():
@@ -789,7 +756,7 @@ def compuerta_estado():
 @app.route("/api/servo/<int:angulo>",methods=["POST"])
 @auth_required
 def servo_mover(angulo):
-    if not (0<=angulo<=180): return jsonify(ok=False,message="Ángulo 0-180"),400
+    if not (0<=angulo<=180): return jsonify(ok=False,message="Angulo 0-180"),400
     servo_state["angulo"]=angulo
     if HARDWARE_OK and mg995:
         try: mg995.angle=angulo
@@ -807,7 +774,7 @@ def servo_sweep():
     threading.Thread(target=do,daemon=True).start()
     return jsonify(ok=True)
 
-# ── NOTIFICACIONES ────────────────────────────────────────────────────────────
+# NOTIFICACIONES
 @app.route("/api/notificaciones")
 @auth_required
 def notifs():
@@ -825,7 +792,7 @@ def notifs_leer():
     query("UPDATE notificaciones SET leida=1 WHERE usuario_id=%s",(g.usuario["id"],),commit=True)
     return jsonify(ok=True)
 
-# ── GRAFICACIÓN ───────────────────────────────────────────────────────────────
+# GRAFICAS
 @app.route("/api/graficas/consumo_diario")
 @auth_required
 def grafica_consumo():
@@ -869,13 +836,13 @@ def grafica_nivel():
 @app.route("/api/graficas/temperatura")
 @auth_required
 def grafica_temp():
-    rows=query("""SELECT DATE_FORMAT(leido_at,'%H:%i') AS hora,temperatura,humedad
+    rows=query("""SELECT DATE_FORMAT(leido_at,'%%H:%%i') AS hora,temperatura,humedad
         FROM lecturas_ambiente WHERE leido_at>=DATE_SUB(NOW(),INTERVAL 24 HOUR)
         ORDER BY leido_at ASC LIMIT 100""",())
     return jsonify(ok=True,data=list(rows),actual=sensor_cache["dht"],
                    historial_live=sensor_history["temperatura"][-20:])
 
-# ── INTELIGENCIA DE NEGOCIOS ──────────────────────────────────────────────────
+# BI
 @app.route("/api/bi/config",methods=["GET"])
 @auth_required
 def bi_config_get():
@@ -889,102 +856,50 @@ def bi_config_put():
     for k,v in d.items():
         query("INSERT INTO config_bi(usuario_id,clave,valor) VALUES(%s,%s,%s) ON DUPLICATE KEY UPDATE valor=%s",
               (uid,k,float(v),float(v)),commit=True)
-    return jsonify(ok=True,message="Configuración guardada")
+    return jsonify(ok=True,message="Configuracion guardada")
 
 @app.route("/api/bi/ahorro")
 @auth_required
 def bi_ahorro():
     uid=g.usuario["id"]
-    # Cargar config del usuario
     cfg_rows=query("SELECT clave,valor FROM config_bi WHERE usuario_id=%s",(uid,))
     cfg={r["clave"]:float(r["valor"]) for r in cfg_rows}
-    cfg.setdefault("costo_kg_alimento",27.0)
-    cfg.setdefault("veces_manual_dia",2.0)
-    cfg.setdefault("minutos_por_vez",5.0)
-    cfg.setdefault("costo_hora_tiempo",50.0)
-    cfg.setdefault("costo_proyecto",1000.0)
-    cfg.setdefault("desperdicio_manual_pct",15.0)
-    cfg.setdefault("consulta_vet_pesos",500.0)
-    cfg.setdefault("visitas_vet_ahorradas",1.0)
-
-    # Estadísticas reales de uso
-    stats=query("""SELECT
-        COUNT(*) AS total_disp, SUM(gramos_real) AS total_gramos,
-        SUM(gramos_programados) AS total_programado,
-        MIN(ejecutado_at) AS primera_disp,
-        AVG(gramos_programados - gramos_real) AS desperdicio_prom
+    cfg.setdefault("costo_kg_alimento",27.0); cfg.setdefault("veces_manual_dia",2.0)
+    cfg.setdefault("minutos_por_vez",5.0); cfg.setdefault("costo_hora_tiempo",50.0)
+    cfg.setdefault("costo_proyecto",1000.0); cfg.setdefault("desperdicio_manual_pct",15.0)
+    cfg.setdefault("consulta_vet_pesos",500.0); cfg.setdefault("visitas_vet_ahorradas",1.0)
+    stats=query("""SELECT COUNT(*) AS total_disp,SUM(gramos_real) AS total_gramos,
+        SUM(gramos_programados) AS total_programado,MIN(ejecutado_at) AS primera_disp,
+        AVG(gramos_programados-gramos_real) AS desperdicio_prom
         FROM dispensaciones d JOIN mascotas m ON m.id=d.mascota_id
         WHERE m.usuario_id=%s AND d.exitosa=1""",(uid,),one=True)
-
-    total_gramos     = float(stats["total_gramos"] or 0)
-    total_programado = float(stats["total_programado"] or 0)
-    primera_disp     = stats["primera_disp"]
-
-    # Días de uso del sistema
-    if primera_disp:
-        dias_uso = max(1,(datetime.now()-primera_disp).days)
-    else:
-        dias_uso = 1
-
-    # ── CÁLCULOS DE AHORRO ──
-    # 1. Ahorro en comida (porciones exactas vs desperdicio manual)
-    desperdicio_manual_kg = (total_gramos/1000) * (cfg["desperdicio_manual_pct"]/100)
-    ahorro_comida_pesos   = desperdicio_manual_kg * cfg["costo_kg_alimento"] * 1000  # pesos
-    gramos_ahorrados      = desperdicio_manual_kg * 1000
-
-    # 2. Ahorro en tiempo
-    minutos_ahorrados_total = dias_uso * cfg["veces_manual_dia"] * cfg["minutos_por_vez"]
-    horas_ahorradas         = minutos_ahorrados_total / 60
-    ahorro_tiempo_pesos     = horas_ahorradas * cfg["costo_hora_tiempo"]
-
-    # 3. Ahorro veterinario (alimentación regular = menos problemas digestivos)
-    ahorro_vet_pesos = cfg["visitas_vet_ahorradas"] * cfg["consulta_vet_pesos"]
-
-    # 4. Total ahorrado
-    total_ahorrado = ahorro_comida_pesos + ahorro_tiempo_pesos + ahorro_vet_pesos
-
-    # 5. Retorno de inversión
-    roi_pct       = ((total_ahorrado - cfg["costo_proyecto"]) / cfg["costo_proyecto"]) * 100
-    meses_retorno = cfg["costo_proyecto"] / max(1, total_ahorrado/max(1,dias_uso)*30)
-
-    # 6. Proyecciones
-    ahorro_mensual   = total_ahorrado / max(1, dias_uso) * 30
-    ahorro_anual     = ahorro_mensual * 12
-    costo_disp_dia   = (total_gramos/max(1,dias_uso)/1000) * cfg["costo_kg_alimento"]
-
-    # 7. Eficiencia de dispensación
-    precision_pct = round((1 - abs(total_gramos-total_programado)/max(1,total_programado))*100,1) if total_programado>0 else 100
-
+    total_gramos=float(stats["total_gramos"] or 0)
+    total_programado=float(stats["total_programado"] or 0)
+    primera_disp=stats["primera_disp"]
+    dias_uso=max(1,(datetime.now()-primera_disp).days) if primera_disp else 1
+    desperdicio_manual_kg=(total_gramos/1000)*(cfg["desperdicio_manual_pct"]/100)
+    ahorro_comida_pesos=desperdicio_manual_kg*cfg["costo_kg_alimento"]*1000
+    gramos_ahorrados=desperdicio_manual_kg*1000
+    horas_ahorradas=dias_uso*cfg["veces_manual_dia"]*cfg["minutos_por_vez"]/60
+    ahorro_tiempo_pesos=horas_ahorradas*cfg["costo_hora_tiempo"]
+    ahorro_vet_pesos=cfg["visitas_vet_ahorradas"]*cfg["consulta_vet_pesos"]
+    total_ahorrado=ahorro_comida_pesos+ahorro_tiempo_pesos+ahorro_vet_pesos
+    roi_pct=((total_ahorrado-cfg["costo_proyecto"])/cfg["costo_proyecto"])*100
+    meses_retorno=cfg["costo_proyecto"]/max(1,total_ahorrado/max(1,dias_uso)*30)
+    ahorro_mensual=total_ahorrado/max(1,dias_uso)*30
+    precision_pct=round((1-abs(total_gramos-total_programado)/max(1,total_programado))*100,1) if total_programado>0 else 100
     return jsonify(ok=True,data={
-        "dias_uso":            dias_uso,
-        "total_dispensaciones": int(stats["total_disp"] or 0),
-        "total_gramos":        round(total_gramos,1),
-        "precision_pct":       precision_pct,
-
-        "ahorro": {
-            "comida_gramos":   round(gramos_ahorrados,1),
-            "comida_pesos":    round(ahorro_comida_pesos,2),
-            "tiempo_horas":    round(horas_ahorradas,1),
-            "tiempo_pesos":    round(ahorro_tiempo_pesos,2),
-            "veterinario_pesos": round(ahorro_vet_pesos,2),
-            "total_pesos":     round(total_ahorrado,2),
-        },
-
-        "roi": {
-            "costo_proyecto":  cfg["costo_proyecto"],
-            "total_ahorrado":  round(total_ahorrado,2),
-            "roi_pct":         round(roi_pct,1),
-            "meses_retorno":   round(meses_retorno,1),
-            "recuperado":      total_ahorrado >= cfg["costo_proyecto"],
-        },
-
-        "proyecciones": {
-            "ahorro_mensual":  round(ahorro_mensual,2),
-            "ahorro_anual":    round(ahorro_anual,2),
-            "costo_comida_dia":round(costo_disp_dia,2),
-        },
-
-        "config": cfg,
+        "dias_uso":dias_uso,"total_dispensaciones":int(stats["total_disp"] or 0),
+        "total_gramos":round(total_gramos,1),"precision_pct":precision_pct,
+        "ahorro":{"comida_gramos":round(gramos_ahorrados,1),"comida_pesos":round(ahorro_comida_pesos,2),
+                  "tiempo_horas":round(horas_ahorradas,1),"tiempo_pesos":round(ahorro_tiempo_pesos,2),
+                  "veterinario_pesos":round(ahorro_vet_pesos,2),"total_pesos":round(total_ahorrado,2)},
+        "roi":{"costo_proyecto":cfg["costo_proyecto"],"total_ahorrado":round(total_ahorrado,2),
+               "roi_pct":round(roi_pct,1),"meses_retorno":round(meses_retorno,1),
+               "recuperado":total_ahorrado>=cfg["costo_proyecto"]},
+        "proyecciones":{"ahorro_mensual":round(ahorro_mensual,2),"ahorro_anual":round(ahorro_mensual*12,2),
+                        "costo_comida_dia":round((total_gramos/max(1,dias_uso)/1000)*cfg["costo_kg_alimento"],2)},
+        "config":cfg,
     })
 
 @app.route("/api/bi/resumen")
@@ -1026,19 +941,20 @@ def bi_alertas():
     bajos=query("""SELECT nombre,nivel_actual_g,capacidad_g,ROUND(nivel_actual_g*100.0/capacidad_g,1) AS pct
         FROM dispensadores WHERE usuario_id=%s AND activo=1 AND capacidad_g>0 AND (nivel_actual_g*100.0/capacidad_g)<20""",(uid,))
     for d in bajos:
-        alertas.append({"tipo":"warning","icono":"⚠️","titulo":f"Nivel bajo: {d['nombre']}","msg":f"Solo {d['nivel_actual_g']}g ({d['pct']}%)."})
+        alertas.append({"tipo":"warning","titulo":f"Nivel bajo: {d['nombre']}","msg":f"Solo {d['nivel_actual_g']}g ({d['pct']}%)."})
     sin=query("""SELECT m.nombre FROM mascotas m WHERE m.usuario_id=%s AND m.activo=1
         AND m.id NOT IN (SELECT DISTINCT mascota_id FROM dispensaciones WHERE DATE(ejecutado_at)=%s AND exitosa=1)""",(uid,hoy))
     for m in sin:
-        alertas.append({"tipo":"info","icono":"🐾","titulo":f"{m['nombre']} no ha comido hoy","msg":"Sin tomas exitosas hoy."})
+        alertas.append({"tipo":"info","titulo":f"{m['nombre']} no ha comido hoy","msg":"Sin tomas exitosas hoy."})
     t=sensor_cache["dht"].get("temperatura")
-    if t and t>35: alertas.append({"tipo":"error","icono":"🌡️","titulo":"Temperatura alta","msg":f"{t}°C puede afectar la comida."})
+    if t and t>35: alertas.append({"tipo":"error","titulo":"Temperatura alta","msg":f"{t}C puede afectar la comida."})
     return jsonify(ok=True,alertas=alertas,total=len(alertas))
 
 @app.route("/api/health")
 def health():
     return jsonify(ok=True,app="PetFeeder IoT v4",db="MySQL",hardware=HARDWARE_OK,dht=DHT_OK,peso=PESO_OK)
-# ── ENDPOINTS RASPBERRY PI ────────────────────────────────────────────────────
+
+# ENDPOINTS RASPBERRY PI
 pi_sensores = {"temperatura": None, "humedad": None, "peso": None, "hardware": {}, "updated_at": None}
 pi_ordenes  = []
 pi_orden_id = 0
@@ -1050,7 +966,6 @@ def pi_recibir_sensores():
     d = request.get_json() or {}
     pi_sensores.update(d)
     pi_sensores["updated_at"] = datetime.now().strftime("%H:%M:%S")
-    # Actualizar cache de sensores para que el dashboard los muestre
     if d.get("temperatura"):
         sensor_cache["dht"] = {"ok": True, "temperatura": d["temperatura"], "humedad": d.get("humedad")}
     if d.get("peso") is not None:
@@ -1080,15 +995,16 @@ def pi_pedir_dispensar():
     pi_orden_id += 1
     pi_ordenes.append({"id": pi_orden_id, "tipo": "dispensar", "gramos": d.get("gramos", 100), "ejecutada": False})
     return jsonify(ok=True, orden_id=pi_orden_id)
-# Inicializar siempre (gunicorn o directo)
+
+# INICIALIZAR
 try:
     init_db()
 except Exception as e:
-    print(f"⚠️  init_db falló: {e}")
+    print(f"init_db fallo: {e}")
 
 threading.Thread(target=cron_loop, daemon=True).start()
 
 if __name__=="__main__":
     PORT = int(os.environ.get("PORT", 5001))
-    print(f"\n🚀 PetFeeder IoT v4 en http://0.0.0.0:{PORT}")
+    print(f"PetFeeder IoT v4 en http://0.0.0.0:{PORT}")
     app.run(host="0.0.0.0", port=PORT, debug=False, threaded=True)
