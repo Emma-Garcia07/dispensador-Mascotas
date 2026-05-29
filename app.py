@@ -427,7 +427,29 @@ def cron_loop():
 def index(): return send_from_directory(str(STATIC_DIR),"index.html")
 @app.route("/<path:f>")
 def static_f(f): return send_from_directory(str(STATIC_DIR),f)
-
+def enviar_email_verificacion(email, nombre, token_ver):
+    try:
+        link = f"https://{APP_URL}/api/auth/verificar/{token_ver}"
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = "✅ Verifica tu cuenta PetFeeder IoT"
+        msg["From"]    = GMAIL_USER
+        msg["To"]      = email
+        html = f"""
+        <div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;background:#070b12;color:#eef2ff;padding:30px;border-radius:16px">
+          <h1 style="color:#6c63ff">🐾 PetFeeder IoT</h1>
+          <h2>Hola {nombre}!</h2>
+          <p>Gracias por registrarte. Para activar tu cuenta haz clic en el botón:</p>
+          <a href="{link}" style="display:inline-block;padding:14px 28px;background:#6c63ff;color:#fff;text-decoration:none;border-radius:10px;font-weight:bold;margin:20px 0">✅ Verificar mi cuenta</a>
+          <p style="color:#8899bb;font-size:12px">Si no creaste esta cuenta, ignora este correo.</p>
+        </div>"""
+        msg.attach(MIMEText(html, "html"))
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as s:
+            s.login(GMAIL_USER, GMAIL_PASS)
+            s.sendmail(GMAIL_USER, email, msg.as_string())
+        return True
+    except Exception as e:
+        print(f"[Email] Error: {e}")
+        return False
 # AUTH
 @app.route("/api/auth/login",methods=["POST"])
 def login():
