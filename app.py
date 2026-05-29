@@ -460,9 +460,10 @@ def login():
     if not em or not pw: return jsonify(ok=False,message="Email y contrasena requeridos"),400
     row=query("SELECT * FROM usuarios WHERE email=%s AND activo=1",(em,),one=True)
     if not row or not cp(pw,row["password_hash"]): return jsonify(ok=False,message="Credenciales incorrectas"),401
+    if not row["verificado"] and em != "demo@petfeeder.com": return jsonify(ok=False,message="⚠️ Debes verificar tu correo antes de iniciar sesión.",no_verificado=True),403
     token=create_token({"id":row["id"],"email":row["email"],"nombre":row["nombre"]})
     return jsonify(ok=True,token=token,usuario={"id":row["id"],"nombre":row["nombre"],"email":row["email"]})
-
+    
 @app.route("/api/auth/register",methods=["POST"])
 def register():
     d=request.get_json() or {}
