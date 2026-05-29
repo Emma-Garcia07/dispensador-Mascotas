@@ -7,6 +7,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
+  
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
   --bg:#070b12;--bg2:#0d1420;--bg3:#131c2e;--bg4:#1a2540;
@@ -286,6 +287,18 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;b
   .stat-grid{grid-template-columns:1fr}
   .auth-card{padding:20px}
 }
+  /* PASS */
+.pass-wrap{position:relative;display:flex;align-items:center}
+.pass-wrap input{flex:1;padding-right:40px}
+.eye-btn{position:absolute;right:10px;background:none;border:none;cursor:pointer;font-size:1rem;opacity:.6;transition:.2s;padding:0}
+.eye-btn:hover{opacity:1}
+.pass-strength{margin-top:6px}
+.pass-bar{height:4px;background:var(--bg4);border-radius:2px;overflow:hidden;margin-bottom:3px}
+.pass-fill{height:100%;border-radius:2px;transition:.3s;width:0%}
+.pass-label{font-size:.7rem;color:var(--text2)}
+.field-msg{font-size:.72rem;margin-top:3px;display:block;min-height:14px}
+.field-msg.ok{color:var(--success)}
+.field-msg.err{color:var(--danger)}
 </style>
 </head>
 <body>
@@ -303,17 +316,67 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;b
         <button class="auth-tab active" onclick="switchTab('login')">Iniciar sesión</button>
         <button class="auth-tab" onclick="switchTab('register')">Registrarse</button>
       </div>
+
+      <!-- LOGIN -->
       <div id="tab-login">
-        <div class="fg"><label>Email</label><input type="email" id="l-email" placeholder="demo@petfeeder.com"></div>
-        <div class="fg"><label>Contraseña</label><input type="password" id="l-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
+        <div class="fg">
+          <label>Email</label>
+          <input type="email" id="l-email" placeholder="demo@petfeeder.com" oninput="validarEmail('l-email')">
+          <span class="field-msg" id="msg-l-email"></span>
+        </div>
+        <div class="fg">
+          <label>Contraseña</label>
+          <div class="pass-wrap">
+            <input type="password" id="l-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+            <button class="eye-btn" onclick="togglePass('l-pass',this)" type="button">👁️</button>
+          </div>
+        </div>
+        <div id="msg-no-verificado" style="display:none;margin-bottom:12px;padding:10px 14px;background:rgba(255,179,71,.1);border:1px solid rgba(255,179,71,.3);border-radius:10px;font-size:.8rem;color:var(--warn)">
+          ⚠️ Tu correo no está verificado. Revisa tu bandeja de entrada.
+          <br><button onclick="reenviarVerificacion()" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:.8rem;padding:4px 0;font-family:'Outfit',sans-serif">🔄 Reenviar correo</button>
+        </div>
         <button class="btn-auth" id="btn-login" onclick="doLogin()">Entrar →</button>
         <div class="auth-demo">Demo: <b>demo@petfeeder.com</b> / <b>demo123</b></div>
       </div>
+
+      <!-- REGISTRO -->
       <div id="tab-reg" style="display:none">
-        <div class="fg"><label>Nombre</label><input type="text" id="r-nombre" placeholder="Tu nombre"></div>
-        <div class="fg"><label>Email</label><input type="email" id="r-email" placeholder="tu@email.com"></div>
-        <div class="fg"><label>Contraseña</label><input type="password" id="r-pass" placeholder="Mínimo 6 caracteres"></div>
+        <div class="fg">
+          <label>Nombre</label>
+          <input type="text" id="r-nombre" placeholder="Tu nombre" oninput="validarNombre()">
+          <span class="field-msg" id="msg-r-nombre"></span>
+        </div>
+        <div class="fg">
+          <label>Email</label>
+          <input type="email" id="r-email" placeholder="tu@email.com" oninput="validarEmail('r-email')">
+          <span class="field-msg" id="msg-r-email"></span>
+        </div>
+        <div class="fg">
+          <label>Contraseña</label>
+          <div class="pass-wrap">
+            <input type="password" id="r-pass" placeholder="Mínimo 6 caracteres" oninput="validarPass()">
+            <button class="eye-btn" onclick="togglePass('r-pass',this)" type="button">👁️</button>
+          </div>
+          <div class="pass-strength" id="pass-strength" style="display:none">
+            <div class="pass-bar"><div class="pass-fill" id="pass-fill"></div></div>
+            <span class="pass-label" id="pass-label">Débil</span>
+          </div>
+          <span class="field-msg" id="msg-r-pass"></span>
+        </div>
+        <div class="fg">
+          <label>Confirmar contraseña</label>
+          <div class="pass-wrap">
+            <input type="password" id="r-pass2" placeholder="Repite tu contraseña" oninput="validarPass2()">
+            <button class="eye-btn" onclick="togglePass('r-pass2',this)" type="button">👁️</button>
+          </div>
+          <span class="field-msg" id="msg-r-pass2"></span>
+        </div>
         <button class="btn-auth" id="btn-reg" onclick="doRegister()">Crear cuenta →</button>
+        <div id="reg-success" style="display:none;margin-top:14px;padding:14px;background:rgba(0,229,160,.08);border:1px solid rgba(0,229,160,.2);border-radius:10px;text-align:center">
+          <div style="font-size:2rem">📧</div>
+          <div style="font-weight:700;color:var(--success);margin:6px 0">¡Cuenta creada!</div>
+          <div style="font-size:.8rem;color:var(--text2)">Revisa tu correo y haz clic en el enlace de verificación para activar tu cuenta.</div>
+        </div>
       </div>
     </div>
   </div>
@@ -723,6 +786,8 @@ async function doLogin() {
   const email = document.getElementById('l-email').value.trim();
   const pass  = document.getElementById('l-pass').value;
   const btn   = document.getElementById('btn-login');
+  const msgNV = document.getElementById('msg-no-verificado');
+  msgNV.style.display = 'none';
   if (!email || !pass) { toast('Completa los campos', 'err'); return; }
   btn.disabled = true; btn.textContent = 'Entrando...';
   try {
@@ -731,7 +796,14 @@ async function doLogin() {
     localStorage.setItem('pf2_token', TOKEN);
     localStorage.setItem('pf2_user', JSON.stringify(USER));
     initApp();
-  } catch(e) { toast(e.message, 'err'); }
+  } catch(e) {
+    if (e.message.includes('verificar')) {
+      emailNoVerificado = email;
+      msgNV.style.display = 'block';
+    } else {
+      toast(e.message, 'err');
+    }
+  }
   finally { btn.disabled = false; btn.textContent = 'Entrar →'; }
 }
 
@@ -739,14 +811,18 @@ async function doRegister() {
   const nombre = document.getElementById('r-nombre').value.trim();
   const email  = document.getElementById('r-email').value.trim();
   const pass   = document.getElementById('r-pass').value;
+  const pass2  = document.getElementById('r-pass2').value;
   const btn    = document.getElementById('btn-reg');
+  if (!validarNombre() || !validarEmail('r-email') || !validarPass() || !validarPass2()) {
+    toast('Corrige los errores antes de continuar', 'err'); return;
+  }
+  if (pass !== pass2) { toast('Las contraseñas no coinciden', 'err'); return; }
   btn.disabled = true; btn.textContent = 'Creando...';
   try {
-    const d = await api('POST', '/api/auth/register', { nombre, email, password: pass });
-    TOKEN = d.token; USER = d.usuario;
-    localStorage.setItem('pf2_token', TOKEN);
-    localStorage.setItem('pf2_user', JSON.stringify(USER));
-    initApp();
+    await api('POST', '/api/auth/register', { nombre, email, password: pass });
+    document.getElementById('btn-reg').style.display = 'none';
+    document.getElementById('reg-success').style.display = 'block';
+    toast('📧 Revisa tu correo para verificar', 'info');
   } catch(e) { toast(e.message, 'err'); }
   finally { btn.disabled = false; btn.textContent = 'Crear cuenta →'; }
 }
@@ -1642,6 +1718,93 @@ document.querySelectorAll('.dia-btn').forEach(b => b.onclick = () => b.classList
 
 if (TOKEN && USER) initApp();
 else { document.getElementById('auth').style.display='flex'; document.getElementById('app').style.display='none'; }
+
+  // ═══════════════════════════════════════════
+// AUTH MEJORADO
+// ═══════════════════════════════════════════
+function togglePass(id, btn) {
+  const input = document.getElementById(id);
+  if (input.type === 'password') {
+    input.type = 'text';
+    btn.textContent = '🙈';
+  } else {
+    input.type = 'password';
+    btn.textContent = '👁️';
+  }
+}
+
+function validarEmail(id) {
+  const val = document.getElementById(id).value.trim();
+  const msg = document.getElementById('msg-' + id);
+  if (!val) { msg.textContent = ''; msg.className = 'field-msg'; return false; }
+  const ok = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(val);
+  msg.textContent = ok ? '✅ Email válido' : '❌ Email inválido';
+  msg.className = 'field-msg ' + (ok ? 'ok' : 'err');
+  return ok;
+}
+
+function validarNombre() {
+  const val = document.getElementById('r-nombre').value.trim();
+  const msg = document.getElementById('msg-r-nombre');
+  if (!val) { msg.textContent = ''; return false; }
+  const ok = val.length >= 2;
+  msg.textContent = ok ? '✅ Nombre válido' : '❌ Mínimo 2 caracteres';
+  msg.className = 'field-msg ' + (ok ? 'ok' : 'err');
+  return ok;
+}
+
+function validarPass() {
+  const val = document.getElementById('r-pass').value;
+  const msg = document.getElementById('msg-r-pass');
+  const bar = document.getElementById('pass-fill');
+  const lbl = document.getElementById('pass-label');
+  const str = document.getElementById('pass-strength');
+  if (!val) { msg.textContent = ''; str.style.display = 'none'; return false; }
+  str.style.display = 'block';
+  let score = 0;
+  if (val.length >= 6)  score++;
+  if (val.length >= 10) score++;
+  if (/[A-Z]/.test(val)) score++;
+  if (/[0-9]/.test(val)) score++;
+  if (/[^A-Za-z0-9]/.test(val)) score++;
+  const niveles = [
+    { pct: '20%', color: '#ff4d6d', label: '🔴 Muy débil' },
+    { pct: '40%', color: '#ff8c42', label: '🟠 Débil' },
+    { pct: '60%', color: '#ffb347', label: '🟡 Regular' },
+    { pct: '80%', color: '#00d4b4', label: '🟢 Buena' },
+    { pct: '100%', color: '#00e5a0', label: '✅ Muy segura' },
+  ];
+  const n = niveles[Math.min(score, 4)];
+  bar.style.width = n.pct;
+  bar.style.background = n.color;
+  lbl.textContent = n.label;
+  lbl.style.color = n.color;
+  const ok = val.length >= 6;
+  msg.textContent = ok ? '' : '❌ Mínimo 6 caracteres';
+  msg.className = 'field-msg err';
+  return ok;
+}
+
+function validarPass2() {
+  const p1  = document.getElementById('r-pass').value;
+  const p2  = document.getElementById('r-pass2').value;
+  const msg = document.getElementById('msg-r-pass2');
+  if (!p2) { msg.textContent = ''; return false; }
+  const ok = p1 === p2;
+  msg.textContent = ok ? '✅ Contraseñas coinciden' : '❌ No coinciden';
+  msg.className = 'field-msg ' + (ok ? 'ok' : 'err');
+  return ok;
+}
+
+let emailNoVerificado = '';
+
+async function reenviarVerificacion() {
+  if (!emailNoVerificado) return;
+  try {
+    await api('POST', '/api/auth/reenviar-verificacion', { email: emailNoVerificado }, false);
+    toast('📧 Correo reenviado', 'info');
+  } catch(e) { toast('Error al reenviar', 'err'); }
+}
 </script>
 </body>
 </html>
