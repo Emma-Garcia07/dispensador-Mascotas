@@ -461,10 +461,8 @@ def login():
     if not em or not pw: return jsonify(ok=False,message="Email y contrasena requeridos"),400
     row=query("SELECT * FROM usuarios WHERE email=%s AND activo=1",(em,),one=True)
     if not row or not cp(pw,row["password_hash"]): return jsonify(ok=False,message="Credenciales incorrectas"),401
-    if not row["verificado"] and em != "demo@petfeeder.com": return jsonify(ok=False,message="⚠️ Debes verificar tu correo antes de iniciar sesión.",no_verificado=True),403
     token=create_token({"id":row["id"],"email":row["email"],"nombre":row["nombre"]})
     return jsonify(ok=True,token=token,usuario={"id":row["id"],"nombre":row["nombre"],"email":row["email"]})
-
 
 @app.route("/api/auth/verificar/<token>", methods=["GET"])
 def verificar_email(token):
@@ -506,17 +504,14 @@ def register():
     if not re.match(r"[^@\s]+@[^@\s]+\.[^@\s]+",email): return jsonify(ok=False,message="Email invalido"),400
     if len(pw)<6: return jsonify(ok=False,message="Contrasena minimo 6 caracteres"),400
     if query("SELECT id FROM usuarios WHERE email=%s",(email,),one=True): return jsonify(ok=False,message="Email ya registrado"),409
-    token_ver = secrets.token_hex(32)
-    uid=query("INSERT INTO usuarios(nombre,email,password_hash,verificado,token_verificacion) VALUES(%s,%s,%s,%s,%s)",
-              (nombre,email,hp(pw),0,token_ver),commit=True,lastid=True)
+    uid=query("INSERT INTO usuarios(nombre,email,password_hash) VALUES(%s,%s,%s)",(nombre,email,hp(pw)),commit=True,lastid=True)
     defaults=[("costo_kg_alimento",27.0),("veces_manual_dia",2.0),("minutos_por_vez",5.0),
               ("costo_hora_tiempo",50.0),("costo_proyecto",1000.0),("desperdicio_manual_pct",15.0),
               ("consulta_vet_pesos",500.0),("visitas_vet_ahorradas",1.0)]
     for k,v in defaults:
         query("INSERT INTO config_bi(usuario_id,clave,valor) VALUES(%s,%s,%s)",(uid,k,v),commit=True)
-    enviado = enviar_email_verificacion(email, nombre, token_ver)
-    return jsonify(ok=True, message="Cuenta creada. Revisa tu correo para verificar.", email_enviado=enviado),201
-
+    token=create_token({"id":uid,"email":email,"nombre":nombre})
+    return jsonify(ok=True,token=token,usuario={"id":uid,"nombre":nombre,"email":email}),201
 # DASHBOARD
 @app.route("/api/dashboard")
 @auth_required
