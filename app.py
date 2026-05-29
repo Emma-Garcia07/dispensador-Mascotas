@@ -445,9 +445,10 @@ def enviar_email_verificacion(email, nombre, token_ver):
           <p style="color:#8899bb;font-size:12px">Si no creaste esta cuenta, ignora este correo.</p>
         </div>"""
         msg.attach(MIMEText(html, "html"))
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as s:
-            s.login(GMAIL_USER, GMAIL_PASS)
-            s.sendmail(GMAIL_USER, email, msg.as_string())
+      with smtplib.SMTP("smtp.gmail.com", 587) as s:
+    s.starttls()
+    s.login(GMAIL_USER, GMAIL_PASS)
+    s.sendmail(GMAIL_USER, email, msg.as_string())
         return True
     except Exception as e:
         print(f"[Email] Error: {e}")
