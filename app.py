@@ -484,6 +484,18 @@ def verificar_email(token):
     <p style="color:#8899bb">Ya puedes iniciar sesión en PetFeeder IoT.</p>
     <a href="https://dispensador-mascotas-production.up.railway.app" style="display:inline-block;padding:12px 24px;background:#6c63ff;color:#fff;text-decoration:none;border-radius:10px;margin-top:16px;font-weight:bold">🐾 Ir al inicio →</a>
     </div></body></html>"""
+
+@app.route("/api/auth/reenviar-verificacion", methods=["POST"])
+def reenviar_verificacion():
+    d = request.get_json() or {}
+    email = d.get("email","").strip().lower()
+    row = query("SELECT id,nombre,token_verificacion,verificado FROM usuarios WHERE email=%s AND activo=1",(email,),one=True)
+    if not row: return jsonify(ok=False,message="Email no encontrado"),404
+    if row["verificado"]: return jsonify(ok=False,message="Ya está verificado"),400
+    token_ver = row["token_verificacion"] or secrets.token_hex(32)
+    query("UPDATE usuarios SET token_verificacion=%s WHERE id=%s",(token_ver,row["id"]),commit=True)
+    enviado = enviar_email_verificacion(email, row["nombre"], token_ver)
+    return jsonify(ok=True, message="Correo reenviado", enviado=enviado)
     
 @app.route("/api/auth/register",methods=["POST"])
 def register():
