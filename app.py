@@ -789,6 +789,7 @@ def disps_hist():
 @app.route("/api/dispensaciones/manual",methods=["POST"])
 @auth_required
 def disp_manual():
+    global pi_orden_id
     d=request.get_json() or {}; uid=g.usuario["id"]
     mid,did,gramos=d.get("mascota_id"),d.get("dispensador_id"),float(d.get("gramos",0))
     if not all([mid,did,gramos]): return jsonify(ok=False,message="Faltan datos"),400
@@ -797,17 +798,18 @@ def disp_manual():
     if not mascota or not disp: return jsonify(ok=False,message="No encontrado"),403
     if float(disp["nivel_actual_g"])<gramos: return jsonify(ok=False,message=f"Nivel insuficiente. Disponible: {disp['nivel_actual_g']}g"),422
     temp=sensor_cache["dht"].get("temperatura"); hum=sensor_cache["dht"].get("humedad")
-    def do_disp():
-        gr=dispensar_con_peso(gramos)
-        db2=get_db_direct()
-        with db2.cursor() as c:
-            c.execute("INSERT INTO dispensaciones(mascota_id,dispensador_id,gramos_programados,gramos_real,tipo,exitosa,nota,temperatura,humedad) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s)",
-                      (mid,did,gramos,gr,"manual",1,d.get("nota") or "Manual",temp,hum))
-            c.execute("UPDATE dispensadores SET nivel_actual_g=GREATEST(0,nivel_actual_g-%s) WHERE id=%s",(gramos,did))
-            c.execute("INSERT INTO notificaciones(usuario_id,tipo,titulo,mensaje) VALUES(%s,%s,%s,%s)",
-                      (uid,"dispensado",f"{mascota['nombre']} ha comido",f"Se dispensaron {gr}g manualmente."))
-        db2.commit(); db2.close()
-    threading.Thread(target=do_disp,daemon=True).start()
+    # Mandar orden a la Pi
+    pi_orden_id += 1
+    pi_ordenes.append({"id": pi_orden_id, "tipo": "dispensar", "gramos": gramos, "ejecutada": False})
+    # Registrar en BD
+    db2=get_db_direct()
+    with db2.cursor() as c:
+        c.execute("INSERT INTO dispensaciones(mascota_id,dispensador_id,gramos_programados,gramos_real,tipo,exitosa,nota,temperatura,humedad) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                  (mid,did,gramos,gramos,"manual",1,d.get("nota") or "Manual",temp,hum))
+        c.execute("UPDATE dispensadores SET nivel_actual_g=GREATEST(0,nivel_actual_g-%s) WHERE id=%s",(gramos,did))
+        c.execute("INSERT INTO notificaciones(usuario_id,tipo,titulo,mensaje) VALUES(%s,%s,%s,%s)",
+                  (uid,"dispensado",f"{mascota['nombre']} ha comido",f"Se dispensaron {gramos}g manualmente."))
+    db2.commit(); db2.close()
     return jsonify(ok=True,message="Dispensando..."),201
 
 # SERVO
