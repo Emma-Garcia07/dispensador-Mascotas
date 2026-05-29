@@ -166,6 +166,8 @@ def init_db():
             password_hash VARCHAR(64) NOT NULL,
             telefono VARCHAR(20),
             activo TINYINT DEFAULT 1,
+            verificado TINYINT DEFAULT 0,
+            token_verificacion VARCHAR(64),
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4""")
         cur.execute("""CREATE TABLE IF NOT EXISTS mascotas (
