@@ -465,7 +465,7 @@ def login():
     return jsonify(ok=True,token=token,usuario={"id":row["id"],"nombre":row["nombre"],"email":row["email"]})
 
 
-    @app.route("/api/auth/verificar/<token>", methods=["GET"])
+@app.route("/api/auth/verificar/<token>", methods=["GET"])
 def verificar_email(token):
     row = query("SELECT id,nombre FROM usuarios WHERE token_verificacion=%s AND verificado=0",(token,),one=True)
     if not row:
