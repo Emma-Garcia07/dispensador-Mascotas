@@ -8,6 +8,9 @@ PetFeeder IoT v4
 - BI con calculo de ahorro economico
 """
 import os, hashlib, hmac, time, threading, json, base64, re
+import smtplib, secrets
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 try:
     import serial as pyserial
 except ImportError:
@@ -22,6 +25,9 @@ from flask import Flask, request, jsonify, send_from_directory, g
 BASE_DIR   = Path(__file__).parent
 STATIC_DIR = BASE_DIR / "static"
 JWT_SECRET = os.environ.get("JWT_SECRET", "petfeeder_v4_2026")
+GMAIL_USER = os.environ.get("GMAIL_USER", "")
+GMAIL_PASS = os.environ.get("GMAIL_PASS", "")
+APP_URL    = os.environ.get("RAILWAY_PUBLIC_DOMAIN", "dispensador-mascotas-production.up.railway.app")
 TOKEN_DAYS = 7
 
 # CONFIG MySQL
