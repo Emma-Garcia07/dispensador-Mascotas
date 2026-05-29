@@ -463,6 +463,27 @@ def login():
     if not row["verificado"] and em != "demo@petfeeder.com": return jsonify(ok=False,message="⚠️ Debes verificar tu correo antes de iniciar sesión.",no_verificado=True),403
     token=create_token({"id":row["id"],"email":row["email"],"nombre":row["nombre"]})
     return jsonify(ok=True,token=token,usuario={"id":row["id"],"nombre":row["nombre"],"email":row["email"]})
+
+
+    @app.route("/api/auth/verificar/<token>", methods=["GET"])
+def verificar_email(token):
+    row = query("SELECT id,nombre FROM usuarios WHERE token_verificacion=%s AND verificado=0",(token,),one=True)
+    if not row:
+        return """<html><body style="font-family:Arial;background:#070b12;color:#eef2ff;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0">
+        <div style="text-align:center;padding:40px;background:#0d1420;border-radius:16px;border:1px solid #1e3048">
+        <div style="font-size:3rem">❌</div>
+        <h2 style="color:#ff4d6d">Enlace inválido o ya usado</h2>
+        <p style="color:#8899bb">Este enlace ya fue usado o no existe.</p>
+        <a href="https://dispensador-mascotas-production.up.railway.app" style="color:#6c63ff">← Ir al inicio</a>
+        </div></body></html>"""
+    query("UPDATE usuarios SET verificado=1, token_verificacion=NULL WHERE id=%s",(row["id"],),commit=True)
+    return """<html><body style="font-family:Arial;background:#070b12;color:#eef2ff;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0">
+    <div style="text-align:center;padding:40px;background:#0d1420;border-radius:16px;border:1px solid #1e3048">
+    <div style="font-size:3rem">✅</div>
+    <h2 style="color:#00e5a0">¡Cuenta verificada!</h2>
+    <p style="color:#8899bb">Ya puedes iniciar sesión en PetFeeder IoT.</p>
+    <a href="https://dispensador-mascotas-production.up.railway.app" style="display:inline-block;padding:12px 24px;background:#6c63ff;color:#fff;text-decoration:none;border-radius:10px;margin-top:16px;font-weight:bold">🐾 Ir al inicio →</a>
+    </div></body></html>"""
     
 @app.route("/api/auth/register",methods=["POST"])
 def register():
