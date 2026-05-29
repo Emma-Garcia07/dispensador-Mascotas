@@ -446,9 +446,9 @@ def enviar_email_verificacion(email, nombre, token_ver):
         </div>"""
         msg.attach(MIMEText(html, "html"))
       with smtplib.SMTP("smtp.gmail.com", 587) as s:
-    s.starttls()
-    s.login(GMAIL_USER, GMAIL_PASS)
-    s.sendmail(GMAIL_USER, email, msg.as_string())
+        s.starttls()
+        s.login(GMAIL_USER, GMAIL_PASS)
+        s.sendmail(GMAIL_USER, email, msg.as_string())
         return True
     except Exception as e:
         print(f"[Email] Error: {e}")
